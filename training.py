@@ -136,9 +136,10 @@ def main():
 
                 if (i % training_config["log_interval"]) == 0:
                     print(f"\tEpoch: {epoch} | Batch: {i} | Policy Loss: {policy_weight * batch_policy_loss / training_config['log_interval']:.3g} | Policy Loss (MSE): {policy_weight * batch_policy_loss_mse / training_config['log_interval']:.3g} | Winner Loss: {winner_weight * batch_winner_loss / training_config['log_interval']:.3g} | MLH Loss: {mlh_weight * batch_mlh_loss / training_config['log_interval']:.3g} | Total Weighted Loss: {batch_total_loss / training_config['log_interval']:.3g}")
-                    batch_mlh_loss = 0.0
                     batch_policy_loss = 0.0
+                    batch_policy_loss_mse = 0.0
                     batch_winner_loss = 0.0
+                    batch_mlh_loss = 0.0
                     batch_total_loss = 0.0
             end = timeit.default_timer()
             print(f"Epoch {epoch} finished. Policy Loss: {policy_weight * epoch_policy_loss / len(training_loader):.3g} | Policy Loss (MSE): {policy_weight * epoch_policy_loss_mse / len(training_loader):.3g} | Winner Loss: {winner_weight * epoch_winner_loss / len(training_loader):.3g} | MLH Loss: {mlh_weight * epoch_mlh_loss / len(training_loader):.3g} | Total Weighted Loss: {epoch_total_loss / len(training_loader):.3g} | Runtime: {end - start:.0f} seconds.")
