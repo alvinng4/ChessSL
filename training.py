@@ -123,13 +123,13 @@ def main():
                 optimizer.step()
 
                 epoch_policy_loss += probs_loss.item()
-                epoch_policy_loss_mse += mse_loss(policy_logit, relu(probs_targets)).item()
+                epoch_policy_loss_mse += mse_loss(torch.nn.functional.softmax(policy_logit, dim=1), relu(probs_targets)).item()
                 epoch_winner_loss += winner_loss.item()
                 epoch_mlh_loss += mlh_loss.item()
                 epoch_total_loss += loss.item()
 
                 batch_policy_loss += probs_loss.item()
-                batch_policy_loss_mse += mse_loss(policy_logit, relu(probs_targets)).item()
+                batch_policy_loss_mse += mse_loss(torch.nn.functional.softmax(policy_logit, dim=1), relu(probs_targets)).item()
                 batch_winner_loss += winner_loss.item()
                 batch_mlh_loss += mlh_loss.item()
                 batch_total_loss += loss.item()
