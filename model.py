@@ -526,8 +526,8 @@ class ResidualSEBlock(nn.Module):
         out = self.bn1(out)
         out = self.conv2(out)
         out = self.bn2(out)
-        # out = self.se(out)
-        # out = self.sigmoid(out[:, :FILTERS, None, None]) * x + out[:, FILTERS:, None, None]
+        out = self.se(out)
+        out = self.sigmoid(out[:, :FILTERS, None, None]) * x + out[:, FILTERS:, None, None]
         out += x
 
         return self.relu(out)
