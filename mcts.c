@@ -49,6 +49,7 @@ void initialize_root(
     root->en_passant = en_passant;
     root->num_half_moves = num_half_moves;
 
+    root->num_legal_actions = 0;
     for (int16 i = 0; i < 1792; i++)
     {
         if (policy[i] != 0.0)
@@ -317,7 +318,7 @@ bool batch_PUCT(
             float puct;
             /* Node not explored */
             if (current_node->children[i] == NULL)
-            {
+            { 
                 float v_c = (current_node->wdl[0] - current_node->wdl[2] + current_node->value_virtual_loss) / current_node->num_descents - c_fpu * sqrtf(current_node->total_policy_explored_children);
                 puct = v_c + c_puct * current_node->legal_actions_prior[i] * sqrtf(current_node->num_descents);
             }
@@ -473,12 +474,20 @@ void get_best_move_and_wdl(
 {
     if (root->num_children == 0)
     {
-        *from = root->legal_from[0];
-        *to = root->legal_to[0];
-        *promotion = root->legal_promotion[0];
-        *w = 0.0;
-        *d = 0.0;
-        *l = 0.0;
+        int16 best_child = 0;
+        for (int16 i = 0; i < root->num_legal_actions; i++)
+        {
+            if (root->legal_actions_prior[i] > root->legal_actions_prior[best_child])
+            {
+                best_child = i;
+            }
+        }
+        *from = root->legal_from[best_child];
+        *to = root->legal_to[best_child];
+        *promotion = root->legal_promotion[best_child];
+        *w = root->wdl[0]; 
+        *d = root->wdl[1];
+        *l = root->wdl[2];
         return;
     }
     
@@ -491,15 +500,15 @@ void get_best_move_and_wdl(
             most_visits = root->children[root->children_idx[i]]->num_descents;
             best_child = root->children_idx[i];
         }
-        printf("Prior: %f, Num_visits: %d, value: %f, from: %d, to: %d\n",
-            root->legal_actions_prior[root->children_idx[i]], 
-            root->children[root->children_idx[i]]->num_descents, 
-            (
-                root->children[root->children_idx[i]]->wdl[2] + 0.5 * root->children[root->children_idx[i]]->wdl[1]
-            ) / root->children[root->children_idx[i]]->num_descents,
-            root->legal_from[root->children_idx[i]],
-            root->legal_to[root->children_idx[i]]
-        );
+        // printf("Prior: %f, Num_visits: %d, value: %f, from: %d, to: %d\n",
+        //     root->legal_actions_prior[root->children_idx[i]], 
+        //     root->children[root->children_idx[i]]->num_descents, 
+        //     (
+        //         root->children[root->children_idx[i]]->wdl[2] + 0.5 * root->children[root->children_idx[i]]->wdl[1]
+        //     ) / root->children[root->children_idx[i]]->num_descents,
+        //     root->legal_from[root->children_idx[i]],
+        //     root->legal_to[root->children_idx[i]]
+        // );
     }
 
     *from = root->legal_from[best_child];

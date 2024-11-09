@@ -1,8 +1,5 @@
-import ctypes
-
-import torch
 import torch.nn as nn
-from torch.nn.utils import fuse_conv_bn_eval
+# from torch.nn.utils import fuse_conv_bn_eval
 
 BLOCKS = 20
 FILTERS = 256
@@ -38,7 +35,6 @@ class ResNetSE(nn.Module):
             nn.ReLU(),
             nn.Flatten(),
             nn.Linear(128, 3),
-            nn.Softmax(dim=1),
         )
 
         self.moves_left_head = nn.Sequential(
@@ -530,8 +526,8 @@ class ResidualSEBlock(nn.Module):
         out = self.bn1(out)
         out = self.conv2(out)
         out = self.bn2(out)
-        out = self.se(out)
-        out = self.sigmoid(out[:, :FILTERS, None, None]) * x + out[:, FILTERS:, None, None]
+        # out = self.se(out)
+        # out = self.sigmoid(out[:, :FILTERS, None, None]) * x + out[:, FILTERS:, None, None]
         out += x
 
         return self.relu(out)

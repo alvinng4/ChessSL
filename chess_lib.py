@@ -334,7 +334,7 @@ class Chess:
             policy, wdl, _ = model(torch.tensor(encoded_black_board).to(device).reshape(1, 112, 8, 8))
 
         policy = policy.squeeze(0).cpu().numpy()
-        wdl = wdl.squeeze(0).cpu().numpy()
+        wdl = torch.nn.functional.softmax(wdl, dim=1).squeeze(0).cpu().numpy()
 
         c_lib.mask_illegal_and_softmax_policy(
             policy.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
@@ -384,6 +384,7 @@ class Chess:
         c_fpu: float,
         virtual_loss: float,
     ) -> str:
+        softmax = torch.nn.Softmax(dim=1)
         current_nodes = ctypes.c_int32(1)
         node_pool = Chess.initialize_node_pool_and_root_node(
             c_lib,
@@ -418,8 +419,8 @@ class Chess:
             )
             
             policy, wdl, moves_left = model(torch.tensor(batched_encoded_boards[: (num_batched_nodes.value * 112 * 64)]).reshape(num_batched_nodes.value, 112, 8, 8).to(device))
-            policy = policy.cpu().numpy().flatten()
-            wdl = wdl.cpu().numpy()
+            policy = policy.cpu().numpy()
+            wdl = softmax(wdl).cpu().numpy()
             
             c_lib.mcts_batches_mask_illegal_and_softmax_policy(
                 policy.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),

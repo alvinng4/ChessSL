@@ -1,10 +1,10 @@
 engine:
-  model_path: "/Users/alvinng/Desktop/cuhk/Year 4/PHYS4061/ChessSL/run0_model_epoch70.pt"
+  model_path: "/Users/alvinng/Desktop/cuhk/Year 4/PHYS4061/ChessSL/model_epoch28.pt"
   device: "cpu"                       # "cpu" or "cuda:0"
-  default_num_nodes: 1024               # Number of nodes if it is not specified in the command "go"
+  default_num_nodes: 256               # Number of nodes if it is not specified in the command "go"
   mcts_batch_size: 32
-  mcts_batches_early_stop: 2048         # Early stop if the batch is not filled after this iterations
-  c_puct: 0.5
+  mcts_batches_early_stop: 64         # Early stop if the batch is not filled after this iterations
+  c_puct: 1.1
   c_fpu: 0.2
   virtual_loss: 3.0
   
@@ -20,6 +20,7 @@ training:
   data_loader_pin_memory: True
   num_epochs: 100
   learning_rate: 0.001
+  momentum: 0.9
   policy_weight: 1.0
   winner_weight: 1.0
   mlh_weight: 0.0005

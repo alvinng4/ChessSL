@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from torch.optim import Adam
+from torch.optim import SGD
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
@@ -77,11 +77,10 @@ def main():
             pin_memory=training_config["data_loader_pin_memory"],
         )
 
-        optimizer = Adam(model.parameters(), lr=training_config["learning_rate"])
+        optimizer = SGD(model.parameters(), lr=training_config["learning_rate"], momentum=training_config["momentum"])
         cross_entropy_loss = torch.nn.CrossEntropyLoss()
         mse_loss = torch.nn.MSELoss()
         relu = torch.nn.ReLU()
-        softmax = torch.nn.Softmax(dim=1)
         print("Done!")
 
         print("Training started...")
@@ -110,11 +109,10 @@ def main():
                 plies_left_targets = plies_left_targets.to(device)
 
                 optimizer.zero_grad(set_to_none=True)
-                probs, winner, plies_left = model(planes)
-                probs[probs_targets < 0.0] = float("-inf")    # Set invalid moves to negative infinity, so that it doesn't affect the softmax calculation
-                probs = softmax(probs)
+                policy_logit, winner, plies_left = model(planes)
+                policy_logit[probs_targets < 0.0] = -1e10    # Set invalid moves to a very negative value, so that it doesn't affect the softmax calculation
 
-                probs_loss = cross_entropy_loss(probs, relu(probs_targets))
+                probs_loss = cross_entropy_loss(policy_logit, relu(probs_targets))
                 winner_loss = cross_entropy_loss(winner, winner_targets)
                 mlh_loss = mse_loss(plies_left, plies_left_targets.unsqueeze(1))
                 loss = policy_weight * probs_loss + winner_weight * winner_loss + mlh_weight * mlh_loss

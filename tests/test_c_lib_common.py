@@ -3,10 +3,11 @@ import gzip
 import struct
 
 import numpy as np
-
-import model
 import torch
+
+from model import ResNetSE
 import training
+from chess_lib import Chess
 from utils import load_c_lib
 
 c_lib = load_c_lib()
@@ -345,14 +346,6 @@ def test_encode_boards():
     encoded_white_board = np.zeros((112 * 64), dtype=np.float32)
     encoded_black_board = np.zeros((112 * 64), dtype=np.float32)
 
-    # Plane 108: All zeros if White's turn
-    encoded_white_board[int(108 * 64) : int(109 * 64)] = 0.0
-    encoded_black_board[int(108 * 64) : int(109 * 64)] = 1.0
-
-    # The last plane is always ones for border
-    encoded_white_board[int(111 * 64) :] = 1.0
-    encoded_black_board[int(111 * 64) :] = 1.0
-
     board_0 = np.array(
         [
             -4, -2, -3, -5, -6, -3, -2, -4,
@@ -368,6 +361,8 @@ def test_encode_boards():
     board_metadata = np.array([True, True, True, True, False, True], dtype=bool)
     num_half_moves_ctypes = ctypes.c_int8(0)
     c_lib.encode_boards(
+        encoded_white_board.copy().ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        encoded_black_board.copy().ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         encoded_white_board.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         encoded_black_board.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         board_0.ctypes.data_as(ctypes.POINTER(ctypes.c_int8)),
@@ -391,6 +386,8 @@ def test_encode_boards():
     board_metadata = np.array([True, True, True, True, False, False], dtype=bool)
     num_half_moves_ctypes = ctypes.c_int8(0)
     c_lib.encode_boards(
+        encoded_white_board.copy().ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        encoded_black_board.copy().ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         encoded_white_board.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         encoded_black_board.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         board_1.ctypes.data_as(ctypes.POINTER(ctypes.c_int8)),
@@ -414,6 +411,8 @@ def test_encode_boards():
     board_metadata = np.array([True, True, True, True, False, True], dtype=bool)
     num_half_moves_ctypes = ctypes.c_int8(0)
     c_lib.encode_boards(
+        encoded_white_board.copy().ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        encoded_black_board.copy().ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         encoded_white_board.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         encoded_black_board.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         board_2.ctypes.data_as(ctypes.POINTER(ctypes.c_int8)),
@@ -437,6 +436,8 @@ def test_encode_boards():
     board_metadata = np.array([True, True, True, True, False, False], dtype=bool)
     num_half_moves_ctypes = ctypes.c_int8(1)
     c_lib.encode_boards(
+        encoded_white_board.copy().ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        encoded_black_board.copy().ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         encoded_white_board.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         encoded_black_board.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         board_3.ctypes.data_as(ctypes.POINTER(ctypes.c_int8)),
@@ -459,6 +460,8 @@ def test_encode_boards():
     board_metadata = np.array([True, True, True, True, False, True], dtype=bool)
     num_half_moves_ctypes = ctypes.c_int8(0)
     c_lib.encode_boards(
+        encoded_white_board.copy().ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        encoded_black_board.copy().ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         encoded_white_board.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         encoded_black_board.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         board_4.ctypes.data_as(ctypes.POINTER(ctypes.c_int8)),
@@ -482,6 +485,8 @@ def test_encode_boards():
     board_metadata = np.array([True, True, True, True, False, False], dtype=bool)
     num_half_moves_ctypes = ctypes.c_int8(1)
     c_lib.encode_boards(
+        encoded_white_board.copy().ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        encoded_black_board.copy().ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         encoded_white_board.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         encoded_black_board.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         board_5.ctypes.data_as(ctypes.POINTER(ctypes.c_int8)),
@@ -505,6 +510,8 @@ def test_encode_boards():
     num_half_moves_ctypes = ctypes.c_int8(2)
 
     c_lib.encode_boards(
+        encoded_white_board.copy().ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        encoded_black_board.copy().ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         encoded_white_board.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         encoded_black_board.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
         board_6.ctypes.data_as(ctypes.POINTER(ctypes.c_int8)),
@@ -513,6 +520,66 @@ def test_encode_boards():
     )
     assert (encoded_white_board == planes_list[6].flatten()).all()
 
+    chess = Chess(c_lib, ResNetSE(), "cpu", 32, 1.1, 0.2, 3.0)
+    chess.new_game()
+    assert (chess.white_board == board_0.flatten()).all()
+    assert (chess.encoded_white_board == planes_list[0].flatten()).all()
+    chess.search(c_lib, chess.model, chess.device, chess.white_board, chess.encoded_white_board, chess.encoded_black_board, chess.board_metadata, chess.en_passant_ctypes, chess.num_half_moves_ctypes, 32, chess.batched_encoded_boards, chess.batch_size, 64, chess.c_puct, chess.c_fpu, chess.virtual_loss)
+    chess.make_moves(
+        c_lib,
+        chess.white_board, 
+        chess.encoded_white_board, 
+        chess.encoded_black_board, 
+        chess.board_metadata, 
+        chess.en_passant_ctypes, 
+        chess.num_half_moves_ctypes, 
+        chess.moves, 
+        ["c2c4"]
+    )
+    assert (chess.white_board == board_1.flatten()).all()
+    assert (chess.encoded_black_board == planes_list[1].flatten()).all()
+    chess.search(c_lib, chess.model, chess.device, chess.white_board, chess.encoded_white_board, chess.encoded_black_board, chess.board_metadata, chess.en_passant_ctypes, chess.num_half_moves_ctypes, 32, chess.batched_encoded_boards, chess.batch_size, 64, chess.c_puct, chess.c_fpu, chess.virtual_loss)
+    chess.make_moves(
+        c_lib,
+        chess.white_board, 
+        chess.encoded_white_board, 
+        chess.encoded_black_board, 
+        chess.board_metadata, 
+        chess.en_passant_ctypes, 
+        chess.num_half_moves_ctypes, 
+        chess.moves, 
+        ["c2c4", "e7e5"]
+    )
+    assert (chess.white_board == board_2.flatten()).all()
+    assert (chess.encoded_white_board == planes_list[2].flatten()).all()
+    chess.search(c_lib, chess.model, chess.device, chess.white_board, chess.encoded_white_board, chess.encoded_black_board, chess.board_metadata, chess.en_passant_ctypes, chess.num_half_moves_ctypes, 32, chess.batched_encoded_boards, chess.batch_size, 64, chess.c_puct, chess.c_fpu, chess.virtual_loss)
+    chess.make_moves(
+        c_lib,
+        chess.white_board, 
+        chess.encoded_white_board, 
+        chess.encoded_black_board, 
+        chess.board_metadata, 
+        chess.en_passant_ctypes, 
+        chess.num_half_moves_ctypes, 
+        chess.moves, 
+        ["c2c4", "e7e5", "g1f3"]
+    )
+    assert (chess.white_board == board_3.flatten()).all()
+    assert (chess.encoded_black_board == planes_list[3].flatten()).all()
+    chess.search(c_lib, chess.model, chess.device, chess.white_board, chess.encoded_white_board, chess.encoded_black_board, chess.board_metadata, chess.en_passant_ctypes, chess.num_half_moves_ctypes, 32, chess.batched_encoded_boards, chess.batch_size, 64, chess.c_puct, chess.c_fpu, chess.virtual_loss)
+    chess.make_moves(
+        c_lib,
+        chess.white_board, 
+        chess.encoded_white_board, 
+        chess.encoded_black_board, 
+        chess.board_metadata, 
+        chess.en_passant_ctypes, 
+        chess.num_half_moves_ctypes, 
+        chess.moves, 
+        ["c2c4", "e7e5", "g1f3", "e5e4"]
+    )
+    assert (chess.white_board == board_4.flatten()).all()
+    assert (chess.encoded_white_board == planes_list[4].flatten()).all()
 
 def test_make_move():
     pass
@@ -1386,6 +1453,179 @@ def test_mask_illegal_and_softmax_policy():
     ]))
     assert len(predicted_possible_moves) == len(actual_possible_moves)
     assert (predicted_possible_moves == actual_possible_moves).all()
+
+    v6_struct = struct.Struct("4si7432s832sBBBBBBBbfffffffffffffffIHH4H")
+    v6_struct_size = v6_struct.size
+
+    probs_target_list = []
+    with gzip.open("tests/test_data/training.938269777.gz", "rb") as file:
+        content = file.read(256 * v6_struct_size)
+        for i in range(7):
+            sample = i
+            content_i = content[sample * v6_struct_size : (sample + 1) * v6_struct_size]
+            _, probs_target, _, _ = training.convert_v6_to_tuple(content_i)  
+            probs_target_list.append(probs_target)
+
+    board_0 = np.array(
+        [
+            -4, -2, -3, -5, -6, -3, -2, -4,
+            -1, -1, -1, -1, -1, -1, -1, -1,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            1, 1, 1, 1, 1, 1, 1, 1,
+            4, 2, 3, 5, 6, 3, 2, 4
+        ], dtype=np.int8
+    )
+    board_metadata = np.array([True, True, True, True, False, True], dtype=bool)
+    num_half_moves_ctypes = ctypes.c_int8(0)
+    policy = np.ones(1858, dtype=np.float32)
+    c_lib.mask_illegal_and_softmax_policy(
+        policy.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        board_0.ctypes.data_as(ctypes.POINTER(ctypes.c_int8)),
+        board_metadata.ctypes.data_as(ctypes.POINTER(ctypes.c_bool)),
+        num_half_moves_ctypes,
+    )
+    assert ((policy == 0.0) == (probs_target_list[0] == -1.0)).all()
+
+    board_1 = np.array(
+        [
+            -4, -2, -3, -5, -6, -3, -2, -4,
+            -1, -1, -1, -1, -1, -1, -1, -1,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 1, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            1, 1, 0, 1, 1, 1, 1, 1,
+            4, 2, 3, 5, 6, 3, 2, 4
+        ], dtype=np.int8
+    )
+    board_metadata = np.array([True, True, True, True, False, False], dtype=bool)
+    num_half_moves_ctypes = ctypes.c_int8(0)
+    policy = np.ones(1858, dtype=np.float32)
+    c_lib.mask_illegal_and_softmax_policy(
+        policy.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        board_1.ctypes.data_as(ctypes.POINTER(ctypes.c_int8)),
+        board_metadata.ctypes.data_as(ctypes.POINTER(ctypes.c_bool)),
+        num_half_moves_ctypes,
+    )
+    assert ((policy == 0.0) == (probs_target_list[1] == -1.0)).all()
+        
+    board_2 = np.array(
+        [
+            -4, -2, -3, -5, -6, -3, -2, -4,
+            -1, -1, -1, -1, 0, -1, -1, -1,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, -1, 0, 0, 0,
+            0, 0, 1, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            1, 1, 0, 1, 1, 1, 1, 1,
+            4, 2, 3, 5, 6, 3, 2, 4
+        ], dtype=np.int8
+    )
+    board_metadata = np.array([True, True, True, True, False, True], dtype=bool)
+    num_half_moves_ctypes = ctypes.c_int8(0)
+    policy = np.ones(1858, dtype=np.float32)
+    c_lib.mask_illegal_and_softmax_policy(
+        policy.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        board_2.ctypes.data_as(ctypes.POINTER(ctypes.c_int8)),
+        board_metadata.ctypes.data_as(ctypes.POINTER(ctypes.c_bool)),
+        num_half_moves_ctypes,
+    )
+    assert ((policy == 0.0) == (probs_target_list[2] == -1.0)).all()
+
+    board_3 = np.array(
+        [
+            -4, -2, -3, -5, -6, -3, -2, -4,
+            -1, -1, -1, -1, 0, -1, -1, -1,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, -1, 0, 0, 0,
+            0, 0, 1, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 2, 0, 0,
+            1, 1, 0, 1, 1, 1, 1, 1,
+            4, 2, 3, 5, 6, 3, 0, 4
+        ], dtype=np.int8
+    )
+    board_metadata = np.array([True, True, True, True, False, False], dtype=bool)
+    num_half_moves_ctypes = ctypes.c_int8(1)
+    policy = np.ones(1858, dtype=np.float32)
+    c_lib.mask_illegal_and_softmax_policy(
+        policy.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        board_3.ctypes.data_as(ctypes.POINTER(ctypes.c_int8)),
+        board_metadata.ctypes.data_as(ctypes.POINTER(ctypes.c_bool)),
+        num_half_moves_ctypes,
+    )
+    assert ((policy == 0.0) == (probs_target_list[3] == -1.0)).all()
+
+    board_4 = np.array(
+        [
+            -4, -2, -3, -5, -6, -3, -2, -4,
+            -1, -1, -1, -1, 0, -1, -1, -1,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 1, 0, -1, 0, 0, 0,
+            0, 0, 0, 0, 0, 2, 0, 0,
+            1, 1, 0, 1, 1, 1, 1, 1,
+            4, 2, 3, 5, 6, 3, 0, 4
+        ], dtype=np.int8
+    )
+    board_metadata = np.array([True, True, True, True, False, True], dtype=bool)
+    num_half_moves_ctypes = ctypes.c_int8(0)
+    policy = np.ones(1858, dtype=np.float32)
+    c_lib.mask_illegal_and_softmax_policy(
+        policy.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        board_4.ctypes.data_as(ctypes.POINTER(ctypes.c_int8)),
+        board_metadata.ctypes.data_as(ctypes.POINTER(ctypes.c_bool)),
+        num_half_moves_ctypes,
+    )
+    assert ((policy == 0.0) == (probs_target_list[4] == -1.0)).all()
+
+    board_5 = np.array(
+        [
+            -4, -2, -3, -5, -6, -3, -2, -4,
+            -1, -1, -1, -1, 0, -1, -1, -1,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 1, 2, -1, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            1, 1, 0, 1, 1, 1, 1, 1,
+            4, 2, 3, 5, 6, 3, 0, 4
+        ], dtype=np.int8
+    )
+    board_metadata = np.array([True, True, True, True, False, False], dtype=bool)
+    num_half_moves_ctypes = ctypes.c_int8(1)
+    policy = np.ones(1858, dtype=np.float32)
+    c_lib.mask_illegal_and_softmax_policy(
+        policy.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        board_5.ctypes.data_as(ctypes.POINTER(ctypes.c_int8)),
+        board_metadata.ctypes.data_as(ctypes.POINTER(ctypes.c_bool)),
+        num_half_moves_ctypes,
+    )
+    assert ((policy == 0.0) == (probs_target_list[5] == -1.0)).all()
+
+    board_6 = np.array(
+        [
+            -4, 0, -3, -5, -6, -3, -2, -4,
+            -1, -1, -1, -1, 0, -1, -1, -1,
+            0, 0, -2, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 1, 2, -1, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            1, 1, 0, 1, 1, 1, 1, 1,
+            4, 2, 3, 5, 6, 3, 0, 4
+        ], dtype=np.int8
+    )
+    board_metadata = np.array([True, True, True, True, False, True], dtype=bool)
+    num_half_moves_ctypes = ctypes.c_int8(2)
+    policy = np.ones(1858, dtype=np.float32)
+    c_lib.mask_illegal_and_softmax_policy(
+        policy.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+        board_6.ctypes.data_as(ctypes.POINTER(ctypes.c_int8)),
+        board_metadata.ctypes.data_as(ctypes.POINTER(ctypes.c_bool)),
+        num_half_moves_ctypes,
+    )
+    assert ((policy == 0.0) == (probs_target_list[6] == -1.0)).all()
 
     # fmt: on
 
