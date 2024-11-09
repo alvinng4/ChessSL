@@ -94,10 +94,12 @@ def main():
             print(f"Epochs: {epoch}")
             start = timeit.default_timer()
             epoch_policy_loss = 0.0
+            epoch_policy_loss_mse = 0.0
             epoch_winner_loss = 0.0
             epoch_mlh_loss = 0.0
             epoch_total_loss = 0.0
             batch_policy_loss = 0.0
+            batch_policy_loss_mse = 0.0
             batch_winner_loss = 0.0
             batch_mlh_loss = 0.0
             batch_total_loss = 0.0
@@ -121,23 +123,25 @@ def main():
                 optimizer.step()
 
                 epoch_policy_loss += probs_loss.item()
+                epoch_policy_loss_mse += mse_loss(policy_logit, relu(probs_targets)).item()
                 epoch_winner_loss += winner_loss.item()
                 epoch_mlh_loss += mlh_loss.item()
                 epoch_total_loss += loss.item()
 
                 batch_policy_loss += probs_loss.item()
+                batch_policy_loss_mse += mse_loss(policy_logit, relu(probs_targets)).item()
                 batch_winner_loss += winner_loss.item()
                 batch_mlh_loss += mlh_loss.item()
                 batch_total_loss += loss.item()
 
                 if (i % training_config["log_interval"]) == 0:
-                    print(f"\tEpoch: {epoch} | Batch: {i} | Policy Loss: {policy_weight * batch_policy_loss / training_config['log_interval']:.3g} | Winner Loss: {winner_weight * batch_winner_loss / training_config['log_interval']:.3g} | MLH Loss: {mlh_weight * batch_mlh_loss / training_config['log_interval']:.3g} | Total Weighted Loss: {batch_total_loss / training_config['log_interval']:.3g}")
+                    print(f"\tEpoch: {epoch} | Batch: {i} | Policy Loss: {policy_weight * batch_policy_loss / training_config['log_interval']:.3g} | Policy Loss (MSE): {policy_weight * batch_policy_loss_mse / training_config['log_interval']:.3g} | Winner Loss: {winner_weight * batch_winner_loss / training_config['log_interval']:.3g} | MLH Loss: {mlh_weight * batch_mlh_loss / training_config['log_interval']:.3g} | Total Weighted Loss: {batch_total_loss / training_config['log_interval']:.3g}")
                     batch_mlh_loss = 0.0
                     batch_policy_loss = 0.0
                     batch_winner_loss = 0.0
                     batch_total_loss = 0.0
             end = timeit.default_timer()
-            print(f"Epoch {epoch} finished. Policy Loss: {policy_weight * epoch_policy_loss / len(training_loader):.3g} | Winner Loss: {winner_weight * epoch_winner_loss / len(training_loader):.3g} | MLH Loss: {mlh_weight * epoch_mlh_loss / len(training_loader):.3g} | Total Weighted Loss: {epoch_total_loss / len(training_loader):.3g} | Runtime: {end - start:.0f} seconds.")
+            print(f"Epoch {epoch} finished. Policy Loss: {policy_weight * epoch_policy_loss / len(training_loader):.3g} | Policy Loss (MSE): {policy_weight * epoch_policy_loss_mse / len(training_loader):.3g} | Winner Loss: {winner_weight * epoch_winner_loss / len(training_loader):.3g} | MLH Loss: {mlh_weight * epoch_mlh_loss / len(training_loader):.3g} | Total Weighted Loss: {epoch_total_loss / len(training_loader):.3g} | Runtime: {end - start:.0f} seconds.")
             if (epoch % training_config["save_interval"]) == 0:
                 print("Saving model...")
                 torch.save(
