@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 # from torch.nn.utils import fuse_conv_bn_eval
 
@@ -8,22 +9,24 @@ MLH_CHANNELS = 32
 MLH_FC_SIZE = 256
 
 
-class ResNetSE(nn.Module):
+class ResNetCBAM(nn.Module):
     def __init__(self):
         super().__init__()
         self.conv1 = nn.Conv2d(
             in_channels=112, out_channels=FILTERS, kernel_size=3, padding=1, bias=False
         )
         self.bn1 = nn.BatchNorm2d(FILTERS)
-        self.blocks = nn.ModuleList([ResidualSEBlock() for _ in range(BLOCKS)])
+        self.blocks = nn.ModuleList([ResidualBlock() for _ in range(BLOCKS)])
 
         self.policy_head = nn.Sequential(
             nn.Conv2d(
                 in_channels=FILTERS, out_channels=FILTERS, kernel_size=3, padding=1, bias=False
             ),
             nn.BatchNorm2d(FILTERS),
+            nn.ReLU(),
             nn.Conv2d(in_channels=FILTERS, out_channels=80, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(80),
+            nn.ReLU(),
             nn.Flatten(),
             nn.Linear(5120, 1858, bias=False),
         )
@@ -500,7 +503,7 @@ class ResNetSE(nn.Module):
         return policy, value, moves_left
 
 
-class ResidualSEBlock(nn.Module):
+class ResidualBlock(nn.Module):
     def __init__(self):
         super().__init__()
         self.conv1 = nn.Conv2d(
@@ -511,23 +514,83 @@ class ResidualSEBlock(nn.Module):
             in_channels=FILTERS, out_channels=FILTERS, kernel_size=3, padding=1, bias=False
         )
         self.bn2 = nn.BatchNorm2d(FILTERS)
-        self.se = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Flatten(),
-            nn.Linear(FILTERS, SE),
-            nn.ReLU(),
-            nn.Linear(SE, int(2 * FILTERS)),
-        )
+        self.cbam = CBAM(in_channels=FILTERS, cha_att_reduction_ratio=16, spa_att_kernel_size=7)
         self.sigmoid = nn.Sigmoid()
         self.relu = nn.ReLU()
 
     def forward(self, x):
         out = self.conv1(x)
         out = self.bn1(out)
+        out = self.relu(out)
         out = self.conv2(out)
         out = self.bn2(out)
-        out = self.se(out)
-        out = self.sigmoid(out[:, :FILTERS, None, None]) * x + out[:, FILTERS:, None, None]
+        out = self.cbam(out)
         out += x
 
         return self.relu(out)
+
+class channel_attention(nn.Module):
+    def __init__(self, in_channels, reduction_ratio):
+        super().__init__()
+        self.max_pool = nn.AdaptiveMaxPool2d(1)
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.flatten = nn.Flatten()
+        hidden_layer_size = int(in_channels // reduction_ratio)
+
+        self.mlp = nn.Sequential()
+        self.mlp.add_module("fc1", nn.Linear(in_channels, hidden_layer_size))
+        self.mlp.add_module("relu", nn.ReLU())
+        self.mlp.add_module("fc2", nn.Linear(hidden_layer_size, in_channels))
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        max_pooled_map = self.max_pool(x)
+        avg_pooled_map = self.avg_pool(x)
+
+        max_att_map = self.mlp(self.flatten(max_pooled_map))
+        avg_att_map = self.mlp(self.flatten(avg_pooled_map))
+
+        cha_att_map = self.sigmoid(max_att_map + avg_att_map).unsqueeze(2).unsqueeze(3)
+
+        return cha_att_map
+
+
+class spatial_attention(nn.Module):
+    def __init__(self, kernel_size):
+        super().__init__()
+        self.conv = nn.Conv2d(
+            in_channels=2,
+            out_channels=1,
+            kernel_size=kernel_size,
+            padding=((kernel_size - 1) // 2),
+        )
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        max_pooled_map = torch.amax(x, dim=1, keepdim=True)
+        avg_pooled_map = torch.mean(x, dim=1, keepdim=True)
+
+        concat_pooled_map = torch.cat((max_pooled_map, avg_pooled_map), dim=1)
+        conv_map = self.conv(concat_pooled_map)
+        spa_att_map = self.sigmoid(conv_map)
+
+        return spa_att_map
+
+
+class CBAM(nn.Module):
+    """
+    Convolutional Block Attention Module
+    """
+
+    def __init__(self, in_channels, cha_att_reduction_ratio, spa_att_kernel_size):
+        super().__init__()
+        self.channel_attention_module = channel_attention(
+            in_channels, cha_att_reduction_ratio
+        )
+        self.spatial_attention_module = spatial_attention(spa_att_kernel_size)
+
+    def forward(self, x):
+        cha_att_map = self.channel_attention_module(x)
+        spa_att_map = self.spatial_attention_module(x * cha_att_map)
+
+        return x + (x * cha_att_map * spa_att_map)

@@ -14,7 +14,7 @@ from torch.optim import SGD
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
-from model import ResNetSE
+from model import ResNetCBAM
 import utils
 
 RANDOM_STATE = 1
@@ -42,7 +42,7 @@ def main():
 
         device = training_config["device"]
         if training_config["create_new_model"]:
-            model = ResNetSE()
+            model = ResNetCBAM()
             Path(training_config["model_dir"]).mkdir(parents=True, exist_ok=True)
             torch.save(model, Path(training_config["model_dir"]) / "model_epoch0.pt")
             model = model.to(device)
