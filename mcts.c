@@ -158,9 +158,10 @@ void get_batch(
 )
 {
     int32 current_batch_idx = 0;
-    for (int32 i = 0; (i < batch_early_stop) && (current_batch_idx < batch_size) && (*num_current_nodes < num_total_nodes); i++)
+    int32 i = 0;
+    while ((i < batch_early_stop) && (current_batch_idx < batch_size) && (*num_current_nodes < num_total_nodes))
     {
-        bool is_new_node = batch_PUCT(node_pool, &(batch_nodes[current_batch_idx]), *num_current_nodes, c_puct, c_fpu, virtual_loss);
+        bool is_new_node = batch_PUCT(node_pool, &(batch_nodes[current_batch_idx]), batch_early_stop, &i, num_current_nodes, c_puct, c_fpu, virtual_loss);
         if (is_new_node)
         {
             if (batch_nodes[current_batch_idx]->board_metadata[5])
@@ -172,7 +173,6 @@ void get_batch(
                 memcpy(batched_encoded_boards + current_batch_idx * 64 * 112, batch_nodes[current_batch_idx]->encoded_black_board, 64 * 112 * sizeof(float));
             }
             current_batch_idx++;
-            *num_current_nodes += 1;
         }
     }
 
@@ -283,7 +283,9 @@ void back_propagate(Node *restrict node, float w, float d, float l)
 bool batch_PUCT(
     Node *node_pool,
     Node **batch_node_ptr,
-    int32 num_current_nodes,
+    int32 batch_early_stop,
+    int32 *restrict batch_num_iterations,
+    int32 *restrict num_current_nodes,
     float c_puct,
     float c_fpu,
     float virtual_loss
@@ -292,25 +294,9 @@ bool batch_PUCT(
     bool is_new_node = false;
     Node *current_node = &(node_pool[0]);
 
-    while (true)
+    while (*batch_num_iterations < batch_early_stop)
     {
-        /* PUCT search */
-
-        // If no legal actions, it means that it is a leaf node (Either checkmate or stalemate)
-        if (current_node->num_legal_actions == 0)
-        {
-            if (current_node->wdl[1] > 0.0)
-            {
-                back_propagate(current_node, 0.0, 1.0, 0.0);
-            }
-            else
-            {
-                back_propagate(current_node, 0.0, 0.0, 1.0);
-            }
-
-            return false;
-        }
-        
+        /* PUCT search */    
         float best_puct = -INFINITY;
         int16 best_child = 0;
         for (int16 i = 0; i < current_node->num_legal_actions; i++)
@@ -349,7 +335,7 @@ bool batch_PUCT(
         {
             is_new_node = true;
 
-            Node *new_node = &(node_pool[num_current_nodes]);
+            Node *new_node = &(node_pool[*num_current_nodes]);
             new_node->parent = current_node;
             new_node->wdl[0] = 0.0;
             new_node->wdl[1] = 0.0;
@@ -398,6 +384,8 @@ bool batch_PUCT(
             current_node->total_policy_explored_children += current_node->legal_actions_prior[best_child];
 
             current_node = new_node;
+
+            *num_current_nodes += 1;
         }
         else
         {
@@ -406,7 +394,25 @@ bool batch_PUCT(
             /* Node already in the batch */
             if (current_node->num_legal_actions == -1)
             {
+                *batch_num_iterations += 1;
                 back_propagate_virtual_loss(current_node, virtual_loss);
+                return false;
+            }
+
+            // If no legal actions, it means that it is a leaf node (Either checkmate or stalemate)
+            if (current_node->num_legal_actions == 0)
+            {
+                if (current_node->wdl[1] > 0.0)
+                {
+                    *batch_num_iterations += 1;
+                    back_propagate(current_node, 0.0, 1.0, 0.0);
+                }
+                else
+                {
+                    *batch_num_iterations += 1;
+                    back_propagate(current_node, 0.0, 0.0, 1.0);
+                }
+
                 return false;
             }
 
@@ -423,6 +429,7 @@ bool batch_PUCT(
             if (terminal_check == 0)
             {
                 current_node->num_legal_actions = 0;
+                *batch_num_iterations += 1;
                 back_propagate(current_node, 0.0, 1.0, 0.0);
                 return false;
             }
@@ -430,6 +437,7 @@ bool batch_PUCT(
             else if (terminal_check == 1)
             {
                 current_node->num_legal_actions = 0;
+                *batch_num_iterations += 1;
                 back_propagate(current_node, 0.0, 0.0, 1.0);
                 return false;
             }    
@@ -438,11 +446,14 @@ bool batch_PUCT(
             else
             {
                 *batch_node_ptr = current_node;
+                *batch_num_iterations += 1;
                 back_propagate_virtual_loss(current_node, virtual_loss);
                 return true;
             }
         }
     }
+
+    return false;
 }
 
 void mcts_batches_mask_illegal_and_softmax_policy(
@@ -500,15 +511,15 @@ void get_best_move_and_wdl(
             most_visits = root->children[root->children_idx[i]]->num_descents;
             best_child = root->children_idx[i];
         }
-        // printf("Prior: %f, Num_visits: %d, value: %f, from: %d, to: %d\n",
-        //     root->legal_actions_prior[root->children_idx[i]], 
-        //     root->children[root->children_idx[i]]->num_descents, 
-        //     (
-        //         root->children[root->children_idx[i]]->wdl[2] + 0.5 * root->children[root->children_idx[i]]->wdl[1]
-        //     ) / root->children[root->children_idx[i]]->num_descents,
-        //     root->legal_from[root->children_idx[i]],
-        //     root->legal_to[root->children_idx[i]]
-        // );
+        printf("Prior: %f, Num_visits: %d, value: %f, from: %d, to: %d\n",
+            root->legal_actions_prior[root->children_idx[i]], 
+            root->children[root->children_idx[i]]->num_descents, 
+            (
+                root->children[root->children_idx[i]]->wdl[2] - root->children[root->children_idx[i]]->wdl[0]
+            ) / root->children[root->children_idx[i]]->num_descents,
+            root->legal_from[root->children_idx[i]],
+            root->legal_to[root->children_idx[i]]
+        );
     }
 
     *from = root->legal_from[best_child];

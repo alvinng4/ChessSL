@@ -75,7 +75,9 @@ void back_propagate(Node *restrict node, float w, float d, float l);
 bool batch_PUCT(
     Node *root,
     Node **batch_node_ptr,
-    int32 num_current_nodes,
+    int32 batch_early_stop,
+    int32 *restrict batch_num_iterations,
+    int32 *restrict num_current_nodes,
     float c_puct,
     float c_fpu,
     float virtual_loss
