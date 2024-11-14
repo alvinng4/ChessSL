@@ -1329,7 +1329,7 @@ void make_move(
             /* Check en passent */
             if (white_board[from_pos] == PIECE_WHITE_PAWN)
             {
-                if ((from_pos / 8 == 6) && (to_pos / 8 == 4))
+                if ((from_pos / 8 == 6) && (to_pos / 8 == 4) && (white_board[to_pos + 8] == PIECE_NONE))
                 {
                     *en_passant = to_pos % 8;
                 }
@@ -1346,6 +1346,12 @@ void make_move(
             }
 
             /* Make move */
+            // en passent capture
+            if (white_board[from_pos] == PIECE_WHITE_PAWN && (to_pos != (from_pos - 8)) && (to_pos != (from_pos - 16)) && white_board[to_pos] == PIECE_NONE)
+            {
+                white_board[to_pos + 8] = PIECE_NONE;
+            }
+
             white_board[to_pos] = white_board[from_pos];
             white_board[from_pos] = PIECE_NONE;
 
@@ -1422,7 +1428,7 @@ void make_move(
             /* Check en passent */
             if (white_board[from_pos] == PIECE_BLACK_PAWN)
             {
-                if ((from_pos / 8 == 1) && (to_pos / 8 == 3))
+                if ((from_pos / 8 == 1) && (to_pos / 8 == 3) && (white_board[to_pos - 8] == PIECE_NONE))
                 {
                     *en_passant = to_pos % 8;
                 }
@@ -1439,6 +1445,11 @@ void make_move(
             }
 
             /* Make move */
+            // en passent capture
+            if (white_board[from_pos] == PIECE_BLACK_PAWN && (to_pos != (from_pos + 8)) && (to_pos != (from_pos + 16)) && white_board[to_pos] == PIECE_NONE)
+            {
+                white_board[to_pos - 8] = PIECE_NONE;
+            }
             white_board[to_pos] = white_board[from_pos];
             white_board[from_pos] = PIECE_NONE;
 
