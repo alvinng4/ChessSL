@@ -73,6 +73,8 @@ def load_c_lib():
     c_lib.batch_PUCT.restype = ctypes.c_bool
     c_lib.mcts_batches_mask_illegal_and_softmax_policy.restype = None
     c_lib.get_best_move_and_wdl.restype = None
+    c_lib.get_tree_depth.restype = ctypes.c_int16
+    c_lib.print_tree_info.restype = None
 
     return c_lib
 

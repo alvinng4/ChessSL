@@ -89,6 +89,12 @@ def main():
                             #         user_input[9:],
                             #     )
                 case "go":
+                    if "movetime" in user_input:
+                        movetime_index = user_input.index("movetime")
+                        movetime = int(user_input[movetime_index + 1])
+                        nodes = int((movetime / 1000 * engine_config["nps"] ) * engine_config["engine_move_time_factor"])
+                    else:
+                        nodes = engine_config["default_num_nodes"]
                     best_move, wdl = chess.search(
                         chess.c_lib,
                         chess.model,
@@ -99,7 +105,7 @@ def main():
                         chess.board_metadata,
                         chess.en_passant_ctypes,
                         chess.num_half_moves_ctypes,
-                        engine_config["default_num_nodes"],
+                        nodes,
                         chess.batched_encoded_boards,
                         chess.batch_size,
                         engine_config["mcts_batches_early_stop"],

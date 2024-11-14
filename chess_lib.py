@@ -1,5 +1,6 @@
 import ctypes
 import sys
+import timeit
 
 import numpy as np
 import torch
@@ -415,8 +416,10 @@ class Chess:
         num_batched_nodes = ctypes.c_int32(0)
         batch_nodes = (ctypes.POINTER(Chess.Node) * batch_size)()
         
+        max_depth = 0   # To print information
         num_empty_batches = 0   # To prevent infinite loop
         while (current_nodes.value < num_total_nodes):
+            start = timeit.default_timer()
             num_batched_nodes.value = 0
             c_lib.get_batch(
                 node_pool,
@@ -458,7 +461,24 @@ class Chess:
 
             if num_empty_batches > 10:
                 break
-        
+
+            depth = c_lib.get_tree_depth(node_pool)
+            if depth > max_depth:
+                max_depth = depth
+                # c_lib.print_tree_info(
+                #     node_pool,
+                #     ctypes.c_int16(depth),
+                #     num_batched_nodes,
+                #     current_nodes,
+                #     ctypes.c_float(timeit.default_timer() - start),
+                # )
+        # c_lib.print_tree_info(
+        #     node_pool,
+        #     ctypes.c_int16(max_depth),
+        #     num_batched_nodes,
+        #     current_nodes,
+        #     ctypes.c_float(timeit.default_timer() - start),
+        # )
         bestmove_from = ctypes.c_int8(0)
         bestmove_to = ctypes.c_int8(0)
         bestmove_promotion = ctypes.c_int8(0)

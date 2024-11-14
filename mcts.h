@@ -101,5 +101,13 @@ void get_best_move_and_wdl(
     float *restrict d,
     float *restrict l
 );
+int16 get_tree_depth(Node *root);
+void print_tree_info(
+    Node *root,
+    int16 max_depth,
+    int32 num_nodes,
+    int32 num_current_nodes,
+    float elapsed_time
+);
 
 #endif

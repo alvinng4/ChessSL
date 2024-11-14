@@ -540,19 +540,19 @@ void get_best_move_and_wdl(
     {
         if (root->children[root->children_idx[i]]->num_descents > most_visits)
         {
-            most_visits = root->children[root->children_idx[i]]->num_descents;
             best_child = root->children_idx[i];
+            most_visits = root->children[best_child]->num_descents;
         }
-        printf("Prior: %f, Num_visits: %d, value: %f, from: %d, to: %d, promotion: %d\n",
-            root->legal_actions_prior[root->children_idx[i]], 
-            root->children[root->children_idx[i]]->num_descents, 
-            (
-                root->children[root->children_idx[i]]->wdl[2] - root->children[root->children_idx[i]]->wdl[0]
-            ) / root->children[root->children_idx[i]]->num_descents,
-            root->legal_from[root->children_idx[i]],
-            root->legal_to[root->children_idx[i]],
-            root->legal_promotion[root->children_idx[i]]
-        );
+        // printf("Prior: %f, Num_visits: %d, value: %f, from: %d, to: %d, promotion: %d\n",
+        //     root->legal_actions_prior[root->children_idx[i]], 
+        //     root->children[root->children_idx[i]]->num_descents, 
+        //     (
+        //         root->children[root->children_idx[i]]->wdl[2] - root->children[root->children_idx[i]]->wdl[0]
+        //     ) / root->children[root->children_idx[i]]->num_descents,
+        //     root->legal_from[root->children_idx[i]],
+        //     root->legal_to[root->children_idx[i]],
+        //     root->legal_promotion[root->children_idx[i]]
+        // );
     }
 
     *from = root->legal_from[best_child];
@@ -563,4 +563,109 @@ void get_best_move_and_wdl(
     *l = root->children[best_child]->wdl[0] / root->children[best_child]->num_descents;
     *d = root->children[best_child]->wdl[1] / root->children[best_child]->num_descents;
     *w = root->children[best_child]->wdl[2] / root->children[best_child]->num_descents;
+}
+
+int16 get_tree_depth(Node *root)
+{
+    int16 max_depth = 0;
+    int16 most_visits;
+    int16 best_child;
+    Node *current_node = root;
+    while (true)
+    {
+        most_visits = 0;
+        best_child = 0;
+        if (current_node->num_children == 0)
+        {
+            break;
+        }
+
+        for (int16 i = 0; i < current_node->num_children; i++)
+        {
+            if (current_node->children[current_node->children_idx[i]]->num_descents > most_visits)
+            {
+                best_child = current_node->children_idx[i];
+                most_visits = current_node->children[best_child]->num_descents;
+            }
+        }
+
+        current_node = current_node->children[best_child];
+
+        max_depth++;
+    }
+
+    return max_depth;
+}
+
+void print_tree_info(
+    Node *root,
+    int16 max_depth,
+    int32 num_nodes,
+    int32 num_current_nodes,
+    float elapsed_time
+)
+{
+    int32 most_visits;
+    int16 best_child;
+    Node *current_node = root;
+    bool depth_zero_flag = true;
+
+    const char *board_value_to_pos[] = {
+        "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
+        "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
+        "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+        "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
+        "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+        "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+        "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
+        "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1"
+    };
+    printf("info depth %d ", max_depth);
+    while (true)
+    {
+        most_visits = 0;
+        best_child = 0;
+        if (current_node->num_children == 0)
+        {
+            break;
+        }
+
+        for (int16 i = 0; i < current_node->num_children; i++)
+        {
+            if (current_node->children[current_node->children_idx[i]]->num_descents > most_visits)
+            {
+                best_child = current_node->children_idx[i];
+                most_visits = current_node->children[best_child]->num_descents;
+            }
+        }
+
+        if (depth_zero_flag)
+        {
+            float wdl[3];
+            wdl[0] = current_node->children[best_child]->wdl[2] / current_node->children[best_child]->num_descents;
+            wdl[1] = current_node->children[best_child]->wdl[1] / current_node->children[best_child]->num_descents;
+            wdl[2] = current_node->children[best_child]->wdl[0] / current_node->children[best_child]->num_descents;
+            printf("wdl %.0f %.0f %.0f ", wdl[0] * 1000.0, wdl[1] * 1000.0, wdl[2] * 1000.0);
+            printf("nps %d ", (int) ((float) num_nodes / elapsed_time));
+            printf("nodes %d ", num_current_nodes);
+            printf("time %d ", (int) (elapsed_time * 1000.0));
+            printf("pv ");
+            depth_zero_flag = false;
+        }
+        int8 from = current_node->legal_from[best_child];
+        int8 to = current_node->legal_to[best_child];
+        int8 promotion = current_node->legal_promotion[best_child];
+
+        if (promotion == 0)
+        {
+            printf("%s%s ", board_value_to_pos[from], board_value_to_pos[to]);
+        }
+        else
+        {
+            printf("%s%s%c ", board_value_to_pos[from], board_value_to_pos[to], "nbrq"[promotion - 1]);
+        }
+        current_node = current_node->children[best_child];
+    }
+
+    printf("\n");
 }
