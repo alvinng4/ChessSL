@@ -467,6 +467,15 @@ bool batch_PUCT(
                 back_propagate(current_node, 0.0, 1.0, 0.0);
                 return false;
             }
+
+            /* Check for 50 moves */
+            if (current_node->num_half_moves >= 100)
+            {
+                current_node->num_legal_actions = 0;
+                *batch_num_iterations += 1;
+                back_propagate(current_node, 0.0, 1.0, 0.0);
+                return false;
+            }
                 
             /* node need to be evaluated by NN */
             *batch_node_ptr = current_node;

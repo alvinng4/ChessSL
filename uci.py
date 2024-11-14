@@ -71,7 +71,7 @@ def main():
                         if user_input_len == 8:
                             chess.new_game(fen_string=user_input[2:])
                         elif user_input_len > 9:
-                            raise NotImplementedError("FEN with moves not implemented.")
+                            chess.new_game(fen_string=user_input[2:9], moves=user_input[9:])
                             # chess.new_game(fen_string=user_input[2:9], moves=user_input[9:])
 
                             # if len(chess.moves) == 0:
