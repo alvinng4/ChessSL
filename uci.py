@@ -93,6 +93,8 @@ def main():
                         movetime_index = user_input.index("movetime")
                         movetime = int(user_input[movetime_index + 1])
                         nodes = int((movetime / 1000 * engine_config["nps"] ) * engine_config["engine_move_time_factor"])
+                        if nodes < 1:
+                            nodes = 1
                     else:
                         nodes = engine_config["default_num_nodes"]
                     best_move, wdl = chess.search(
