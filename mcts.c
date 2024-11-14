@@ -52,69 +52,76 @@ void initialize_root(
     root->num_legal_actions = 0;
     for (int16 i = 0; i < 1792; i++)
     {
-        if (policy[i] != 0.0)
+        if (policy[i] == 0.0)
         {
-            if (board_metadata[5])
-            {
-                root->legal_from[root->num_legal_actions] = white_policy_idx_to_moves_from[i];
-                root->legal_to[root->num_legal_actions] = white_policy_idx_to_moves_to[i];
-            }
-            else
-            {
-                root->legal_from[root->num_legal_actions] = black_policy_idx_to_moves_from[i];
-                root->legal_to[root->num_legal_actions] = black_policy_idx_to_moves_to[i];
-            }
+            continue;
+        }
+        
+        if (board_metadata[5])
+        {
+            root->legal_from[root->num_legal_actions] = white_policy_idx_to_moves_from[i];
+            root->legal_to[root->num_legal_actions] = white_policy_idx_to_moves_to[i];
+        }
+        else
+        {
+            root->legal_from[root->num_legal_actions] = black_policy_idx_to_moves_from[i];
+            root->legal_to[root->num_legal_actions] = black_policy_idx_to_moves_to[i];
+        }
 
-            /* Check if it is promoting to knight */
-            bool is_promotion_to_knight = false;
-            for (int16 j = 0; j < 22; j++)
+        /* Check if it is promoting to knight */
+        bool is_promotion_to_knight = false;
+        for (int16 j = 0; j < 22; j++)
+        {
+            if (i == possible_knight_promotion_idx[j])
             {
-                if (i == possible_knight_promotion_idx[j])
+                if (board_metadata[5] && white_board[root->legal_from[root->num_legal_actions]] == PIECE_WHITE_PAWN)
                 {
-                    if (board_metadata[5] && white_board[root->legal_from[root->num_legal_actions]] == PIECE_WHITE_PAWN)
-                    {
-                        root->legal_promotion[root->num_legal_actions] = 4;
-                        is_promotion_to_knight = true;
-                        break;
-                    }
-                    else if (!board_metadata[5] && white_board[root->legal_from[root->num_legal_actions]] == PIECE_BLACK_PAWN)
-                    {
-                        root->legal_promotion[root->num_legal_actions] = 4;
-                        is_promotion_to_knight = true;
-                        break;
-                    }
+                    root->legal_promotion[root->num_legal_actions] = 4;
+                    is_promotion_to_knight = true;
+                    break;
+                }
+                else if (!board_metadata[5] && white_board[root->legal_from[root->num_legal_actions]] == PIECE_BLACK_PAWN)
+                {
+                    root->legal_promotion[root->num_legal_actions] = 4;
+                    is_promotion_to_knight = true;
+                    break;
                 }
             }
-            if (!is_promotion_to_knight)
-            {
-                root->legal_promotion[root->num_legal_actions] = 0;
-            }
-            
-            root->legal_actions_prior[root->num_legal_actions] = policy[i];
-            root->num_legal_actions++;
-            if (root->num_legal_actions >= MCTS_MAX_CHILDREN)
-            {
-                fprintf(stderr, "Error: Legal actions larger than MCTS_MAX_CHILDREN in initialize_root()\n");
-                return;
-            }
+        }
+        if (!is_promotion_to_knight)
+        {
+            root->legal_promotion[root->num_legal_actions] = 0;
+        }
+        
+        root->legal_actions_prior[root->num_legal_actions] = policy[i];
+        root->num_legal_actions++;
+        if (root->num_legal_actions >= MCTS_MAX_CHILDREN)
+        {
+            fprintf(stderr, "Error: Legal actions larger than MCTS_MAX_CHILDREN in initialize_root()\n");
+            return;
         }
     }
     for (int16 i = 1792; i < 1858; i++)
     {
-        if (policy[i] != 0.0)
+        if (policy[i] == 0.0)
         {
-            if (board_metadata[5])
-            {
-                root->legal_from[root->num_legal_actions] = white_policy_idx_to_moves_from[i];
-                root->legal_to[root->num_legal_actions] = white_policy_idx_to_moves_to[i];
-            }
-            else
-            {
-                root->legal_from[root->num_legal_actions] = black_policy_idx_to_moves_from[i];
-                root->legal_to[root->num_legal_actions] = black_policy_idx_to_moves_to[i];
-            }
-            root->legal_promotion[root->num_legal_actions] = ((i - 1792) % 3) + 1;
+            continue;
         }
+        
+        if (board_metadata[5])
+        {
+            root->legal_from[root->num_legal_actions] = white_policy_idx_to_moves_from[i];
+            root->legal_to[root->num_legal_actions] = white_policy_idx_to_moves_to[i];
+        }
+        else
+        {
+            root->legal_from[root->num_legal_actions] = black_policy_idx_to_moves_from[i];
+            root->legal_to[root->num_legal_actions] = black_policy_idx_to_moves_to[i];
+        }
+        root->legal_promotion[root->num_legal_actions] = ((i - 1792) % 3) + 1;
+        root->legal_actions_prior[root->num_legal_actions] = policy[i];
+        root->num_legal_actions++;
+    
         if (root->num_legal_actions >= MCTS_MAX_CHILDREN)
         {
             fprintf(stderr, "Error: Legal actions larger than MCTS_MAX_CHILDREN in initialize_root()\n");
@@ -527,14 +534,15 @@ void get_best_move_and_wdl(
             most_visits = root->children[root->children_idx[i]]->num_descents;
             best_child = root->children_idx[i];
         }
-        printf("Prior: %f, Num_visits: %d, value: %f, from: %d, to: %d\n",
+        printf("Prior: %f, Num_visits: %d, value: %f, from: %d, to: %d, promotion: %d\n",
             root->legal_actions_prior[root->children_idx[i]], 
             root->children[root->children_idx[i]]->num_descents, 
             (
                 root->children[root->children_idx[i]]->wdl[2] - root->children[root->children_idx[i]]->wdl[0]
             ) / root->children[root->children_idx[i]]->num_descents,
             root->legal_from[root->children_idx[i]],
-            root->legal_to[root->children_idx[i]]
+            root->legal_to[root->children_idx[i]],
+            root->legal_promotion[root->children_idx[i]]
         );
     }
 
