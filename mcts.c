@@ -344,6 +344,11 @@ bool batch_PUCT(
             memcpy(new_node->white_board, current_node->white_board, 64 * sizeof(int8));
             memcpy(new_node->board_metadata, current_node->board_metadata, 6 * sizeof(bool));
             new_node->num_half_moves = current_node->num_half_moves;
+
+            memcpy(new_node->previous_white_board_one_ply, current_node->white_board, 64 * sizeof(int8));
+            memcpy(new_node->previous_white_board_two_ply, current_node->previous_white_board_one_ply, 64 * sizeof(int8));
+            memcpy(new_node->previous_white_board_three_ply, current_node->previous_white_board_two_ply, 64 * sizeof(int8));
+            memcpy(new_node->previous_white_board_four_ply, current_node->previous_white_board_three_ply, 64 * sizeof(int8));
             
             make_move(
                 new_node->white_board,
@@ -355,6 +360,11 @@ bool batch_PUCT(
                 current_node->legal_promotion[best_child]
             );
 
+            /* Check for repetition */
+            new_node->board_metadata[4] = (
+                memcmp(new_node->white_board, current_node->previous_white_board_three_ply, 64 * sizeof(int8)) == 0
+            );
+            
             encode_boards(
                 current_node->encoded_white_board,
                 current_node->encoded_black_board,
@@ -434,22 +444,28 @@ bool batch_PUCT(
                 return false;
             }
             /* Checkmate */
-            else if (terminal_check == 1)
+            if (terminal_check == 1)
             {
                 current_node->num_legal_actions = 0;
                 *batch_num_iterations += 1;
                 back_propagate(current_node, 0.0, 0.0, 1.0);
                 return false;
             }    
+
+            /* Check for repetition */
+            if (current_node->board_metadata[4])
+            {
+                current_node->num_legal_actions = 0;
+                *batch_num_iterations += 1;
+                back_propagate(current_node, 0.0, 1.0, 0.0);
+                return false;
+            }
                 
             /* node need to be evaluated by NN */
-            else
-            {
-                *batch_node_ptr = current_node;
-                *batch_num_iterations += 1;
-                back_propagate_virtual_loss(current_node, virtual_loss);
-                return true;
-            }
+            *batch_node_ptr = current_node;
+            *batch_num_iterations += 1;
+            back_propagate_virtual_loss(current_node, virtual_loss);
+            return true;
         }
     }
 

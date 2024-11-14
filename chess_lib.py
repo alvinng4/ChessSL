@@ -73,6 +73,10 @@ class Chess:
         ("board_metadata", ctypes.c_bool * 6),
         ("en_passant", ctypes.c_int8),
         ("num_half_moves", ctypes.c_int8),
+        ("previous_white_board_one_ply", ctypes.c_int8 * 64),
+        ("previous_white_board_two_ply", ctypes.c_int8 * 64),
+        ("previous_white_board_three_ply", ctypes.c_int8 * 64),
+        ("previous_white_board_four_ply", ctypes.c_int8 * 64),
         ("encoded_white_board", ctypes.c_float * (64 * 112)),
         ("encoded_black_board", ctypes.c_float * (64 * 112)),
         ("legal_from", ctypes.c_int8 * MCTS_MAX_CHILDREN),
@@ -125,6 +129,10 @@ class Chess:
         # 4: is_repetition
         # 5: is_white_move
         self.board_metadata = np.array([True, True, True, True, False, True], dtype=bool)
+        self.previous_white_board_one_ply = np.zeros(64, dtype=np.int8)
+        self.previous_white_board_two_ply = np.zeros(64, dtype=np.int8)
+        self.previous_white_board_three_ply = np.zeros(64, dtype=np.int8)
+        self.previous_white_board_four_ply = np.zeros(64, dtype=np.int8)
         if fen_string is None:
             self.c_lib.initialize_new_boards(
                 self.white_board.ctypes.data_as(ctypes.POINTER(ctypes.c_int8)),
@@ -178,6 +186,10 @@ class Chess:
             else:
                 promotion = ctypes.c_int8(0)
 
+            self.previous_white_board_four_ply = self.previous_white_board_three_ply.copy()
+            self.previous_white_board_three_ply = self.previous_white_board_two_ply.copy()
+            self.previous_white_board_two_ply = self.previous_white_board_one_ply.copy()
+            self.previous_white_board_one_ply = self.white_board.copy()
             self.c_lib.make_move(
                 self.white_board.ctypes.data_as(ctypes.POINTER(ctypes.c_int8)),
                 self.board_metadata.ctypes.data_as(ctypes.POINTER(ctypes.c_bool)),
@@ -187,6 +199,8 @@ class Chess:
                 to_pos,
                 promotion,
             )
+            if (self.previous_white_board_four_ply == self.white_board).all():
+                self.board_metadata[4] = True
             self.c_lib.encode_boards(
                 self.encoded_white_board.copy().ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
                 self.encoded_black_board.copy().ctypes.data_as(ctypes.POINTER(ctypes.c_float)),

@@ -71,23 +71,23 @@ def main():
                         if user_input_len == 8:
                             chess.new_game(fen_string=user_input[2:])
                         elif user_input_len > 9:
-                            if (user_input_len > 9 + len(chess.moves)) and ((user_input[9:(9+len(chess.moves))] == chess.moves[len(chess.moves)])):
-                                chess.make_moves(
-                                    c_lib,
-                                    chess.white_board,
-                                    chess.encoded_white_board,
-                                    chess.encoded_black_board,
-                                    chess.board_metadata,
-                                    chess.en_passant_ctypes,
-                                    chess.num_half_moves_ctypes,
-                                    chess.moves,
-                                    user_input[9:],
-                                )
-                            else:
-                                chess.new_game(
-                                    fen_string=user_input[2:8],
-                                    moves=user_input[9:]
-                                )
+                            raise NotImplementedError("FEN with moves not implemented.")
+                            # chess.new_game(fen_string=user_input[2:9], moves=user_input[9:])
+
+                            # if len(chess.moves) == 0:
+                            #     chess.new_game(fen_string=user_input[2:], moves=user_input[9:])
+                            # elif (user_input_len > 9 + len(chess.moves)) and ((user_input[9:(9+len(chess.moves))] == chess.moves[len(chess.moves)])):
+                            #     chess.make_moves(
+                            #         c_lib,
+                            #         chess.white_board,
+                            #         chess.encoded_white_board,
+                            #         chess.encoded_black_board,
+                            #         chess.board_metadata,
+                            #         chess.en_passant_ctypes,
+                            #         chess.num_half_moves_ctypes,
+                            #         chess.moves,
+                            #         user_input[9:],
+                            #     )
                 case "go":
                     best_move, wdl = chess.search(
                         chess.c_lib,

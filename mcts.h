@@ -15,6 +15,11 @@ typedef struct Node
     int8 en_passant;
     int8 num_half_moves;
 
+    int8 previous_white_board_one_ply[64];
+    int8 previous_white_board_two_ply[64];
+    int8 previous_white_board_three_ply[64];
+    int8 previous_white_board_four_ply[64];
+
     float encoded_white_board[64 * 112];
     float encoded_black_board[64 * 112];
 
