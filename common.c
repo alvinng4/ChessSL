@@ -1717,7 +1717,14 @@ bool check_castle_legal(
         board[62] = PIECE_WHITE_KING;
         board[63] = PIECE_NONE;
 
-        return_value = !check_king_capture(board, 62, black_king_pos);
+        if (check_king_capture(board, 62, black_king_pos))
+        {
+            return_value = false;
+        }
+        else
+        {
+            return_value = true;
+        }
 
         board[60] = PIECE_WHITE_KING;
         board[61] = PIECE_NONE;
@@ -1728,7 +1735,7 @@ bool check_castle_legal(
     else if (castle_id == 1)
     {
         /* Check if we are in forced mate; If yes, then castling is not legal */
-        if (check_king_capture(board, 60, black_king_pos))
+        if (check_king_capture(board, 60, black_king_pos) || check_king_capture(board, 59, black_king_pos))
         {
             return false;
         }
@@ -1784,7 +1791,7 @@ bool check_castle_legal(
     else
     {
         /* Check if we are in forced mate; If yes, then castling is not legal */
-        if (check_king_capture(board, 59, black_king_pos))
+        if (check_king_capture(board, 59, black_king_pos) || check_king_capture(board, 60, black_king_pos))
         {
             return false;
         }
