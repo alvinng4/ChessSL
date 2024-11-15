@@ -1,14 +1,24 @@
 engine:
   model_path: "/home/alvin/ChessSL/models/model_epoch30.pt"
   device: "cuda:0"                       # "cpu" or "cuda:0"
-  default_num_nodes: 5096               # Number of nodes if it is not specified in the command "go"
-  mcts_batch_size: 128
-  mcts_batches_early_stop: 1024         # Early stop if the batch is not filled after this iterations
-  nps: 1500                             # Estimated nodes per second 
-  engine_move_time_factor: 0.05         # Move time factor = engine_move_time_factor * remaining time         
+  default_num_nodes: 6120               # Number of nodes if it is not specified in the command "go"
+  mcts_batch_size: 32
+  mcts_batches_early_stop: 128         # Early stop if the batch is not filled after this iterations
+  nps: 1800                             # Estimated nodes per second 
+  engine_move_time_factor: 0.05         # Move time factor = engine_move_time_factor * remaining time     
+      
   c_puct: 1.1
   c_fpu: 0.2
   virtual_loss: 3.0
+
+  reduce_nodes_when_winning: True
+  reduce_nodes_winning_rate: 0.98
+  reduce_nodes_factor: 0.5
+
+  use_starting_move: True
+  starting_move: "e2e4"
+
+  print_tree_info: False              # Print tree information. Does not recommend to enable it when using lichess bot as it failed to parse the output
 
 training:
   create_new_model: True

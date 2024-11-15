@@ -398,6 +398,7 @@ class Chess:
         c_puct: float,
         c_fpu: float,
         virtual_loss: float,
+        is_print_tree_info: bool,
     ) -> str:
         softmax = torch.nn.Softmax(dim=1)
         current_nodes = ctypes.c_int32(1)
@@ -465,20 +466,22 @@ class Chess:
             depth = c_lib.get_tree_depth(node_pool)
             if depth > max_depth:
                 max_depth = depth
-                # c_lib.print_tree_info(
-                #     node_pool,
-                #     ctypes.c_int16(depth),
-                #     num_batched_nodes,
-                #     current_nodes,
-                #     ctypes.c_float(timeit.default_timer() - start),
-                # )
-        # c_lib.print_tree_info(
-        #     node_pool,
-        #     ctypes.c_int16(max_depth),
-        #     num_batched_nodes,
-        #     current_nodes,
-        #     ctypes.c_float(timeit.default_timer() - start),
-        # )
+                if is_print_tree_info:
+                    c_lib.print_tree_info(
+                        node_pool,
+                        ctypes.c_int16(depth),
+                        num_batched_nodes,
+                        current_nodes,
+                        ctypes.c_float(timeit.default_timer() - start),
+                    )
+        if is_print_tree_info:
+            c_lib.print_tree_info(
+                node_pool,
+                ctypes.c_int16(max_depth),
+                num_batched_nodes,
+                current_nodes,
+                ctypes.c_float(timeit.default_timer() - start),
+            )
         bestmove_from = ctypes.c_int8(0)
         bestmove_to = ctypes.c_int8(0)
         bestmove_promotion = ctypes.c_int8(0)
