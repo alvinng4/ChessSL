@@ -1702,7 +1702,7 @@ bool check_castle_legal(
     if (castle_id == 0)
     {
         /* Check if we are in forced mate; If yes, then castling is not legal */
-        if (check_king_capture(board, 60, black_king_pos))
+        if (check_king_capture(board, 60, black_king_pos) || check_king_capture(board, 61, black_king_pos))
         {
             return false;
         }
@@ -1764,7 +1764,7 @@ bool check_castle_legal(
     else if (castle_id == 2)
     {
         /* Check if we are in forced mate; If yes, then castling is not legal */
-        if (check_king_capture(board, 59, black_king_pos))
+        if (check_king_capture(board, 59, black_king_pos) || check_king_capture(board, 58, black_king_pos))
         {
             return false;
         }
