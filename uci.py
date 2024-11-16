@@ -74,43 +74,7 @@ def main():
                             chess.new_game(fen_string=user_input[2:])
                         elif user_input_len > 9:
                             chess.new_game(fen_string=user_input[2:9], moves=user_input[9:])
-                            # chess.new_game(fen_string=user_input[2:9], moves=user_input[9:])
-
-                            # if len(chess.moves) == 0:
-                            #     chess.new_game(fen_string=user_input[2:], moves=user_input[9:])
-                            # elif (user_input_len > 9 + len(chess.moves)) and ((user_input[9:(9+len(chess.moves))] == chess.moves[len(chess.moves)])):
-                            #     chess.make_moves(
-                            #         c_lib,
-                            #         chess.white_board,
-                            #         chess.encoded_white_board,
-                            #         chess.encoded_black_board,
-                            #         chess.board_metadata,
-                            #         chess.en_passant_ctypes,
-                            #         chess.num_half_moves_ctypes,
-                            #         chess.moves,
-                            #         user_input[9:],
-                            #     )
                 case "go":
-                    # if "movetime" in user_input:
-                    #     movetime_index = user_input.index("movetime")
-                    #     movetime = int(user_input[movetime_index + 1])
-                    #     nodes = int((movetime / 1000 * engine_config["nps"] ) * engine_config["engine_move_time_factor"])
-                    #     if nodes < 1:
-                    #         nodes = 1
-                    # elif "wtime" in user_input and chess.board_metadata[5] == True:
-                    #     wtime_index = user_input.index("wtime")
-                    #     wtime = int(user_input[wtime_index + 1])
-                    #     nodes = int((wtime / 1000 * engine_config["nps"] ) * engine_config["engine_move_time_factor"])
-                    #     if nodes < 1:
-                    #         nodes = 1
-                    # elif "btime" in user_input and chess.board_metadata[5] == False:
-                    #     btime_index = user_input.index("btime")
-                    #     btime = int(user_input[btime_index + 1])
-                    #     nodes = int((btime / 1000 * engine_config["nps"] ) * engine_config["engine_move_time_factor"])
-                    #     if nodes < 1:
-                    #         nodes = 1
-                    # else:
-                    #     nodes = engine_config["default_num_nodes"]
                     if engine_config["use_starting_move"] and (
                         chess.white_board == np.array(
                             [
@@ -128,9 +92,23 @@ def main():
                         best_move = engine_config["starting_move"]
                     else:
                         nodes = engine_config["default_num_nodes"]
+                        reduced_nodes_winning_flag = False
                         if wdl is not None and engine_config["reduce_nodes_when_winning"]:
                             if wdl[0] > engine_config["reduce_nodes_winning_rate"]:
-                                nodes = int(nodes * engine_config["reduce_nodes_factor"])
+                                nodes = int(nodes * engine_config["reduce_nodes_winning_factor"])
+                                reduced_nodes_winning_flag = True
+                        if engine_config["reduce_nodes_both"] or not reduced_nodes_winning_flag:
+                            if engine_config["reduce_nodes_when_running_out_of_time"]:
+                                if chess.board_metadata[5] and "wtime" in user_input:
+                                    wtime_index = user_input.index("wtime")
+                                    wtime = int(user_input[wtime_index + 1])
+                                    if wtime < engine_config["reduce_nodes_time"]:
+                                        nodes = int(nodes * engine_config["reduce_nodes_time_factor"])
+                                elif (not chess.board_metadata[5]) and "btime" in user_input:
+                                    btime_index = user_input.index("btime")
+                                    btime = int(user_input[btime_index + 1])
+                                    if btime < engine_config["reduce_nodes_time"]:
+                                        nodes = int(nodes * engine_config["reduce_nodes_time_factor"])
                         best_move, wdl = chess.search(
                             chess.c_lib,
                             chess.model,
