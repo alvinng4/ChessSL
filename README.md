@@ -16,7 +16,10 @@ or install the following packages manually:
 numpy==1.26.4
 torch==2.4.0
 ```
-Then, compile the dynamic-linked library by 
+Extra packages should be required to run the engine in CUDA, depending on your system. 
+It is possible to run it on a CPU, but it will be significantly slower.
+
+After installing the packages, compile the dynamic-link library by 
 ```
 make [CC=gcc]
 ```
