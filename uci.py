@@ -96,8 +96,12 @@ def main():
 
                     # Search
                     else: 
+                        
+                        if "nodes" in user_input:
+                            nodes_index = user_input.index("nodes")
+                            nodes = int(user_input[nodes_index + 1])
 
-                        if chess.board_metadata[5] and "wtime" in user_input:
+                        elif chess.board_metadata[5] and "wtime" in user_input:
                             wtime_index = user_input.index("wtime")
                             wtime = int(user_input[wtime_index + 1])
                             nodes = engine_config["engine_move_time_factor"] * engine_config["nps"] * wtime / 1000
