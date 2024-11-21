@@ -115,8 +115,9 @@ def main():
                             if engine_config["base_num_nodes"] != 1:
                                 nodes = int((nodes // engine_config["mcts_batch_size"] + 1) * engine_config["mcts_batch_size"])
 
-                        if nodes > engine_config["max_num_nodes"]:
-                            nodes = engine_config["max_num_nodes"]
+                            if nodes > engine_config["max_num_nodes"]:
+                                nodes = engine_config["max_num_nodes"]
+                            
                         best_move, wdl = chess.search(
                             chess.c_lib,
                             chess.model,
@@ -134,6 +135,7 @@ def main():
                             chess.c_puct,
                             chess.c_fpu,
                             chess.virtual_loss,
+                            engine_config["use_second_move_if_higher_winrate"],
                             engine_config["print_tree_info"],
                         )          
                     if show_wdl and (wdl is not None):

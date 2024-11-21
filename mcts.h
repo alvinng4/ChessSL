@@ -99,7 +99,8 @@ void get_best_move_and_wdl(
     int8 *restrict promotion,
     float *restrict w,
     float *restrict d,
-    float *restrict l
+    float *restrict l,
+    bool use_second_move_if_higher_winrate
 );
 int16 get_tree_depth(Node *root);
 void print_tree_info(

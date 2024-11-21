@@ -242,19 +242,29 @@ void put_batch(
         }
         for (int16 j = 1792; j < 1858; j++)
         {
-            if (policy[i * 1858 + j] != 0.0)
+            if (policy[i * 1858 + j] == 0.0)
             {
-                if (batch_nodes[i]->board_metadata[5])
-                {
-                    batch_nodes[i]->legal_from[batch_nodes[i]->num_legal_actions] = white_policy_idx_to_moves_from[j];
-                    batch_nodes[i]->legal_to[batch_nodes[i]->num_legal_actions] = white_policy_idx_to_moves_to[j];
-                }
-                else
-                {
-                    batch_nodes[i]->legal_from[batch_nodes[i]->num_legal_actions] = black_policy_idx_to_moves_from[j];
-                    batch_nodes[i]->legal_to[batch_nodes[i]->num_legal_actions] = black_policy_idx_to_moves_to[j];
-                }
-                batch_nodes[i]->legal_promotion[batch_nodes[i]->num_legal_actions] = ((j - 1792) % 3) + 1;
+                continue; 
+            }
+
+            if (batch_nodes[i]->board_metadata[5])
+            {
+                batch_nodes[i]->legal_from[batch_nodes[i]->num_legal_actions] = white_policy_idx_to_moves_from[j];
+                batch_nodes[i]->legal_to[batch_nodes[i]->num_legal_actions] = white_policy_idx_to_moves_to[j];
+            }
+            else
+            {
+                batch_nodes[i]->legal_from[batch_nodes[i]->num_legal_actions] = black_policy_idx_to_moves_from[j];
+                batch_nodes[i]->legal_to[batch_nodes[i]->num_legal_actions] = black_policy_idx_to_moves_to[j];
+            }
+            batch_nodes[i]->legal_promotion[batch_nodes[i]->num_legal_actions] = ((j - 1792) % 3) + 1;
+            batch_nodes[i]->legal_actions_prior[batch_nodes[i]->num_legal_actions] = policy[i * 1858 + j];
+            batch_nodes[i]->num_legal_actions++;
+
+            if (batch_nodes[i]->num_legal_actions >= MCTS_MAX_CHILDREN)
+            {
+                fprintf(stderr, "Error: Legal actions larger than MCTS_MAX_CHILDREN in put_batch()\n");
+                return;
             }
         }
 
@@ -312,21 +322,21 @@ bool batch_PUCT(
             /* Node not explored */
             if (current_node->children[i] == NULL)
             { 
-                float v_c = (current_node->wdl[0] - current_node->wdl[2] + current_node->value_virtual_loss) / current_node->num_descents - c_fpu * sqrtf(current_node->total_policy_explored_children);
+                float v_c = (current_node->wdl[0] - current_node->wdl[2] /* + current_node->value_virtual_loss*/) / current_node->num_descents + c_fpu * sqrtf(current_node->total_policy_explored_children);
                 puct = v_c + c_puct * current_node->legal_actions_prior[i] * sqrtf(current_node->num_descents);
             }
 
             /* Node not explored but already inside the batch */
             else if (current_node->children[i]->num_legal_actions == -1)
             {
-                float v_c = (current_node->wdl[0] - current_node->wdl[2] + current_node->value_virtual_loss) / current_node->num_descents - c_fpu * sqrtf(current_node->total_policy_explored_children);
+                float v_c = (current_node->wdl[0] - current_node->wdl[2] /* + current_node->value_virtual_loss */) / current_node->num_descents;
                 puct = v_c + c_puct * current_node->legal_actions_prior[i] * sqrtf(current_node->num_descents) / (1 + current_node->children[i]->num_descents_virtual_loss);
             }
 
             /* Explored nodes */
             else
             {
-                float v_c = (current_node->children[i]->wdl[2] - current_node->children[i]->wdl[0] + current_node->children[i]->value_virtual_loss) / current_node->children[i]->num_descents;
+                float v_c = (current_node->children[i]->wdl[2] - current_node->children[i]->wdl[0] /* + current_node->children[i]->value_virtual_loss */) / current_node->children[i]->num_descents;
                 puct = v_c + c_puct * current_node->legal_actions_prior[i] * sqrtf(current_node->num_descents) / (1 + current_node->children[i]->num_descents + current_node->children[i]->num_descents_virtual_loss);
             }
 
@@ -512,7 +522,8 @@ void get_best_move_and_wdl(
     int8 *restrict promotion,
     float *restrict w,
     float *restrict d,
-    float *restrict l
+    float *restrict l,
+    bool use_second_move_if_higher_winrate
 )
 {
     if (root->num_children == 0)
@@ -536,13 +547,23 @@ void get_best_move_and_wdl(
     
     int32 most_visits = 0;
     int16 best_child = 0;
+    int32 second_most_visits = 0;
+    int16 second_best_child = 0;
     for (int16 i = 0; i < root->num_children; i++)
     {
-        if (root->children[root->children_idx[i]]->num_descents > most_visits)
+        if ((second_most_visits < root->children[root->children_idx[i]]->num_descents) && (root->children[root->children_idx[i]]->num_descents < most_visits))
         {
+            second_best_child = root->children_idx[i];
+            second_most_visits = root->children[second_best_child]->num_descents;
+        }
+        else if (root->children[root->children_idx[i]]->num_descents > most_visits)
+        {
+            second_most_visits = most_visits;
+            second_best_child = best_child;
             best_child = root->children_idx[i];
             most_visits = root->children[best_child]->num_descents;
         }
+
         // printf("Prior: %f, Num_visits: %d, value: %f, from: %d, to: %d, promotion: %d\n",
         //     root->legal_actions_prior[root->children_idx[i]], 
         //     root->children[root->children_idx[i]]->num_descents, 
@@ -553,6 +574,20 @@ void get_best_move_and_wdl(
         //     root->legal_to[root->children_idx[i]],
         //     root->legal_promotion[root->children_idx[i]]
         // );
+    }
+
+    if (use_second_move_if_higher_winrate && (second_most_visits > 0) && (second_best_child != best_child))
+    {
+        if (
+            (root->children[second_best_child]->wdl[2] - root->children[second_best_child] -> wdl[0]) / root->children[second_best_child]->num_descents
+            > (root->children[best_child]->wdl[2] - root->children[best_child]->wdl[0]) / root->children[best_child]->num_descents
+        )
+        {
+            best_child = second_best_child;
+            most_visits = second_most_visits;
+
+            // printf("Using second best move\n");
+        }
     }
 
     *from = root->legal_from[best_child];
@@ -662,7 +697,7 @@ void print_tree_info(
         }
         else
         {
-            printf("%s%s%c ", board_value_to_pos[from], board_value_to_pos[to], "nbrq"[promotion - 1]);
+            printf("%s%s%c ", board_value_to_pos[from], board_value_to_pos[to], "qrbn"[promotion - 1]);
         }
         current_node = current_node->children[best_child];
     }

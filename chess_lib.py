@@ -398,6 +398,7 @@ class Chess:
         c_puct: float,
         c_fpu: float,
         virtual_loss: float,
+        use_second_move_if_higher_winrate: bool,
         is_print_tree_info: bool,
     ) -> str:
         softmax = torch.nn.Softmax(dim=1)
@@ -497,6 +498,7 @@ class Chess:
             ctypes.byref(w),
             ctypes.byref(d),
             ctypes.byref(l),
+            ctypes.c_bool(use_second_move_if_higher_winrate),
         )
 
         bestmove_str = white_board_value_to_pos[bestmove_from.value] + white_board_value_to_pos[bestmove_to.value] + value_to_promotion[bestmove_promotion.value]

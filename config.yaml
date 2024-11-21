@@ -1,23 +1,23 @@
 engine:
   model_path: "/home/alvin/ChessSL/trained_models/model_epoch40.pt"
-  device: "cuda:0"                       # "cpu" or "cuda:0"
-  base_num_nodes: 6144                   # If time is not specified, number of nodes = base_num_nodes, rounded up to batch size unless it is set to 1
-  max_num_nodes: 6144                    # Maximum number of nodes
+  device: "cuda:0"                          # "cpu" or "cuda:0"
+  base_num_nodes: 6144                      # If time is not specified, number of nodes = base_num_nodes, rounded up to batch size unless it is set to 1
+  max_num_nodes: 6144                       # Maximum number of nodes (does not apply for go nodes)
   mcts_batch_size: 32
-  mcts_batches_early_stop: 128           # Early stop if the batch is not filled after this iterations
-  nps: 1800                              # Estimated nodes per second 
-  engine_move_time_factor: 0.08          # Move time factor = engine_move_time_factor * remaining time (s)   
-      
+  mcts_batches_early_stop: 128              # Early stop if the batch is not filled after this iterations
+  nps: 1800                                 # Estimated nodes per second 
+  engine_move_time_factor: 0.08             # Move time factor = engine_move_time_factor * remaining time (s)   
+  
   c_puct: 1.1
   c_fpu: 0.2
   virtual_loss: 3.0
-
-  reduce_nodes_both: False               # Reduce nodes when winning and running out of time (time = time * reduce_nodes_winning_factor * reduce_nodes_time_factor)
+  
+  use_second_move_if_higher_winrate: False  # Not recommended to use
 
   use_starting_move: True
-  starting_move: "e2e4"                  # Starting move. Make sure it is a legal move
+  starting_move: "e2e4"                     # Starting move. Make sure it is a legal move
 
-  print_tree_info: False                 # Print tree information. Does not recommend to enable it when using lichess bot as it failed to parse the output
+  print_tree_info: False                    # Print tree information. Does not recommend when using lichess bot as the API often fails to parse the output
 
 training:
   create_new_model: True
@@ -25,18 +25,18 @@ training:
   model_dir: "models"
   load_model_name: "model_epoch0.pt"
   training_data_dir: "/home/alvin/chessSL_training_data_t80"
-  device: "cuda:0"                       # "cpu" or "cuda:0"
+  device: "cuda:0"                         # "cpu" or "cuda:0"
   batch_size: 512
   data_loader_num_workers: 4
   data_loader_pin_memory: True
-  num_epochs: 50                         # Total number of epochs to train (including the current_epochs)
+  num_epochs: 50                           # Total number of epochs to train (including the current_epochs)
   learning_rate: 0.001
   momentum: 0.9
   policy_weight: 1.0
   winner_weight: 1.0
   mlh_weight: 0.0005
   log_dir: "chessSL_training_logs"
-  log_interval: 200                      # Log training status every log_interval batches
-  save_interval: 10                      # Save model every save_interval epochs
+  log_interval: 200                        # Log training status every log_interval batches
+  save_interval: 10                        # Save model every save_interval epochs
 
 
