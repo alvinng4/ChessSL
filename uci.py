@@ -101,17 +101,20 @@ def main():
                             nodes_index = user_input.index("nodes")
                             nodes = int(user_input[nodes_index + 1])
 
-                        elif chess.board_metadata[5] and "wtime" in user_input:
-                            wtime_index = user_input.index("wtime")
-                            wtime = int(user_input[wtime_index + 1])
-                            nodes = engine_config["engine_move_time_factor"] * engine_config["nps"] * wtime / 1000
+                        else:
+                            if chess.board_metadata[5] and "wtime" in user_input:
+                                wtime_index = user_input.index("wtime")
+                                wtime = int(user_input[wtime_index + 1])
+                                nodes = engine_config["engine_move_time_factor"] * engine_config["nps"] * wtime / 1000
                         
-                        elif (not chess.board_metadata[5]) and "btime" in user_input:
-                            btime_index = user_input.index("btime")
-                            btime = int(user_input[btime_index + 1])
-                            nodes = engine_config["engine_move_time_factor"] * engine_config["nps"] * btime / 1000
+                            elif (not chess.board_metadata[5]) and "btime" in user_input:
+                                btime_index = user_input.index("btime")
+                                btime = int(user_input[btime_index + 1])
+                                nodes = engine_config["engine_move_time_factor"] * engine_config["nps"] * btime / 1000
 
-                        nodes = int((nodes // engine_config["mcts_batch_size"] + 1) * engine_config["mcts_batch_size"])
+                            if engine_config["base_num_nodes"] != 1:
+                                nodes = int((nodes // engine_config["mcts_batch_size"] + 1) * engine_config["mcts_batch_size"])
+
                         if nodes > engine_config["max_num_nodes"]:
                             nodes = engine_config["max_num_nodes"]
                         best_move, wdl = chess.search(

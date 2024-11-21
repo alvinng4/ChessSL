@@ -419,6 +419,7 @@ class Chess:
         
         max_depth = 0   # To print information
         num_empty_batches = 0   # To prevent infinite loop
+        start = timeit.default_timer()
         while (current_nodes.value < num_total_nodes):
             start = timeit.default_timer()
             num_batched_nodes.value = 0
