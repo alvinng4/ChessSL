@@ -1,8 +1,8 @@
 # ChessSL
 Chess engine trained with supervised learning using Leela Chess Zero T80 data.
 
-As of 17/11/2024 on lichess.org, the engine has a bullet rating of 2070 and a blitz rating of 2160, which is stronger than 87.1% and 95.4% of the players respectively.
-(https://lichess.org/@/chesssl_bot) 
+As of 23/11/2024 on lichess.org, the engine has a bullet rating of 2154 and a blitz rating of 2113, which is stronger than 90.3% and 94.7% of the players respectively.
+(See https://lichess.org/@/chesssl_bot) 
 
 ## Installation
 Python version 3.10 or higher is required to run the engine.
@@ -15,9 +15,9 @@ or install the following packages manually:
 ```
 numpy==1.26.4
 torch==2.4.0
+pyyaml==6.0.2
 ```
-Extra packages should be required to run the engine in CUDA, depending on your system. 
-It is possible to run it on a CPU, but it will be significantly slower.
+Extra packages may be required to run the engine in CUDA, depending on your system. 
 
 After installing the packages, compile the dynamic-link library by 
 ```
@@ -53,6 +53,11 @@ python3 uci.py
 <<< ucinewgame
 
 <<< position startpos moves e2e4 e7e5 g1f3
+
+<<< go wtime 300000 btime 300000 
+>>> bestmove b8c6
+
+<<< position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves e2e4 e7e5 g1f3
 
 <<< go wtime 300000 btime 300000 
 >>> bestmove b8c6
@@ -98,9 +103,15 @@ The trained model is available in the `trained_models` folder.
 It is a ResNet + CBAM model with 20 residual blocks and 256 filters (See `model.py`).
 I have trained it for 40 epochs with 2843611 T80 data (`lr = 0.001` for 30 epochs and `lr=0.0001` for 10 epochs). Each epochs took around 2500 seconds on a single RTX2070.
 
-The final loss is as follows:
+The final weighted loss is as follows:
 ```
 Policy Loss: 2.08 | Policy Loss (MSE): 0.000109 | Winner Loss: 0.804 | MLH Loss: 1.61 | Total Weighted Loss: 4.5
+```
+with
+```
+policy_weight: 1.0
+winner_weight: 1.0
+mlh_weight: 0.0005
 ```
 The policy MSE loss is for reference only. It is not used to calculate the total loss.
 
