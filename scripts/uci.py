@@ -11,7 +11,7 @@ RANDOM_STATE = 1
 utils.seed_everything(RANDOM_STATE)
 
 def main():
-    print("ChessSL version 0.0.1")
+    print("ChessSL version 1.0.0")
     if not (Path(__file__).parent.parent / "config.yaml").exists():
         raise FileNotFoundError(f"config.yaml not found from Path {Path(__file__).parent.parent / 'config.yaml'}.")
 
