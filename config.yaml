@@ -1,8 +1,9 @@
 engine:
-  model_path: "/home/alvin/ChessSL/trained_models/model_epoch40.pt"
-  device: "cuda:0"                          # "cpu" or "cuda:0"
-  base_num_nodes: 6144                      # If time is not specified, number of nodes = base_num_nodes, rounded up to batch size unless it is set to 1
-  max_num_nodes: 6144                       # Maximum number of nodes (does not apply for go nodes)
+  model_path: "../trained_models/model_epoch40.pt"
+  device: "cpu"                             # "cpu" or "cuda:0"
+  c_lib_path: "../src/c_lib.so"             # c_lib.dll for Windows, c_lib.dylib for Mac and c_lib.so for Linux.
+  base_num_nodes: 7168                      # If time is not specified, number of nodes = base_num_nodes, rounded up to batch size unless it is set to 1
+  max_num_nodes: 7168                       # Maximum number of nodes (does not apply for go nodes)
   mcts_batch_size: 32
   mcts_batches_early_stop: 128              # Early stop if the batch is not filled after this iterations
   nps: 1800                                 # Estimated nodes per second 
@@ -22,7 +23,7 @@ engine:
 training:
   create_new_model: True
   current_epochs: 0
-  model_dir: "models"
+  model_dir: "../models"
   load_model_name: "model_epoch0.pt"
   training_data_dir: "/home/alvin/chessSL_training_data_t80"
   device: "cuda:0"                         # "cpu" or "cuda:0"
@@ -35,7 +36,7 @@ training:
   policy_weight: 1.0
   winner_weight: 1.0
   mlh_weight: 0.0005
-  log_dir: "chessSL_training_logs"
+  log_dir: "../chessSL_training_logs"
   log_interval: 200                        # Log training status every log_interval batches
   save_interval: 10                        # Save model every save_interval epochs
 

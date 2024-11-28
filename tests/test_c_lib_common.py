@@ -1,16 +1,18 @@
 import ctypes
 import gzip
 import struct
+import sys
 
 import numpy as np
 import torch
 
+sys.path.append("scripts")
 from model import ResNetCBAM
 import training
 from chess_lib import Chess
 from utils import load_c_lib
 
-c_lib = load_c_lib()
+c_lib = load_c_lib("src/c_lib.dylib")
 
 
 def test_initialize_new_boards():
@@ -532,7 +534,7 @@ def test_encode_boards():
     chess.new_game()
     assert (chess.white_board == board_0.flatten()).all()
     assert (chess.encoded_white_board == planes_list[0].flatten()).all()
-    chess.search(c_lib, chess.model, chess.device, chess.white_board, chess.encoded_white_board, chess.encoded_black_board, chess.board_metadata, chess.en_passant_ctypes, chess.num_half_moves_ctypes, 32, chess.batched_encoded_boards, chess.batch_size, 64, chess.c_puct, chess.c_fpu, chess.virtual_loss, False)
+    chess.search(c_lib, chess.model, chess.device, chess.white_board, chess.encoded_white_board, chess.encoded_black_board, chess.board_metadata, chess.en_passant_ctypes, chess.num_half_moves_ctypes, 32, chess.batched_encoded_boards, chess.batch_size, 64, chess.c_puct, chess.c_fpu, chess.virtual_loss, False, False)
     chess.make_moves(
         c_lib,
         chess.white_board, 
@@ -546,7 +548,7 @@ def test_encode_boards():
     )
     assert (chess.white_board == board_1.flatten()).all()
     assert (chess.encoded_black_board == planes_list[1].flatten()).all()
-    chess.search(c_lib, chess.model, chess.device, chess.white_board, chess.encoded_white_board, chess.encoded_black_board, chess.board_metadata, chess.en_passant_ctypes, chess.num_half_moves_ctypes, 32, chess.batched_encoded_boards, chess.batch_size, 64, chess.c_puct, chess.c_fpu, chess.virtual_loss, False)
+    chess.search(c_lib, chess.model, chess.device, chess.white_board, chess.encoded_white_board, chess.encoded_black_board, chess.board_metadata, chess.en_passant_ctypes, chess.num_half_moves_ctypes, 32, chess.batched_encoded_boards, chess.batch_size, 64, chess.c_puct, chess.c_fpu, chess.virtual_loss, False, False)
     chess.make_moves(
         c_lib,
         chess.white_board, 
@@ -560,7 +562,7 @@ def test_encode_boards():
     )
     assert (chess.white_board == board_2.flatten()).all()
     assert (chess.encoded_white_board == planes_list[2].flatten()).all()
-    chess.search(c_lib, chess.model, chess.device, chess.white_board, chess.encoded_white_board, chess.encoded_black_board, chess.board_metadata, chess.en_passant_ctypes, chess.num_half_moves_ctypes, 32, chess.batched_encoded_boards, chess.batch_size, 64, chess.c_puct, chess.c_fpu, chess.virtual_loss, False)
+    chess.search(c_lib, chess.model, chess.device, chess.white_board, chess.encoded_white_board, chess.encoded_black_board, chess.board_metadata, chess.en_passant_ctypes, chess.num_half_moves_ctypes, 32, chess.batched_encoded_boards, chess.batch_size, 64, chess.c_puct, chess.c_fpu, chess.virtual_loss, False, False)
     chess.make_moves(
         c_lib,
         chess.white_board, 
@@ -574,7 +576,7 @@ def test_encode_boards():
     )
     assert (chess.white_board == board_3.flatten()).all()
     assert (chess.encoded_black_board == planes_list[3].flatten()).all()
-    chess.search(c_lib, chess.model, chess.device, chess.white_board, chess.encoded_white_board, chess.encoded_black_board, chess.board_metadata, chess.en_passant_ctypes, chess.num_half_moves_ctypes, 32, chess.batched_encoded_boards, chess.batch_size, 64, chess.c_puct, chess.c_fpu, chess.virtual_loss, False)
+    chess.search(c_lib, chess.model, chess.device, chess.white_board, chess.encoded_white_board, chess.encoded_black_board, chess.board_metadata, chess.en_passant_ctypes, chess.num_half_moves_ctypes, 32, chess.batched_encoded_boards, chess.batch_size, 64, chess.c_puct, chess.c_fpu, chess.virtual_loss, False, False)
     chess.make_moves(
         c_lib,
         chess.white_board, 

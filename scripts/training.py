@@ -28,7 +28,7 @@ def main():
     try:
         utils.seed_everything(RANDOM_STATE)
 
-        with open("config.yaml") as file:
+        with open("../config.yaml") as file:
             training_config = yaml.safe_load(file)["training"]
 
         log_dir = Path(training_config["log_dir"])

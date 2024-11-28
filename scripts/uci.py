@@ -12,13 +12,13 @@ utils.seed_everything(RANDOM_STATE)
 
 def main():
     print("ChessSL version 0.0.1")
-    c_lib = utils.load_c_lib()
-    
-    if not (Path(__file__).parent / "config.yaml").exists():
-        raise FileNotFoundError("config.yaml not found.")
+    if not (Path(__file__).parent.parent / "config.yaml").exists():
+        raise FileNotFoundError(f"config.yaml not found from Path {Path(__file__).parent.parent / 'config.yaml'}.")
 
-    with open(Path(__file__).parent / "config.yaml") as file:
+    with open(Path(__file__).parent.parent / "config.yaml") as file:
         engine_config = yaml.safe_load(file)["engine"]
+
+    c_lib = utils.load_c_lib(engine_config["c_lib_path"])   
 
     model = torch.load(engine_config["model_path"], map_location=torch.device(engine_config["device"]), weights_only=False)
     model.eval()

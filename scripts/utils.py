@@ -11,7 +11,7 @@ import numpy as np
 import torch
 
 
-def load_c_lib():
+def load_c_lib(c_lib_path: str):
     """
     Load the C dynamic-link library
 
@@ -29,16 +29,6 @@ def load_c_lib():
         If the user chose to exit the program
         after failed loading of the C library
     """
-    if platform.system() == "Windows":
-        c_lib_path = str(Path(__file__).parent / "c_lib.dll")
-    elif platform.system() == "Darwin":
-        c_lib_path = str(Path(__file__).parent / "c_lib.dylib")
-    elif platform.system() == "Linux":
-        c_lib_path = str(Path(__file__).parent / "c_lib.so")
-    else:
-        print(f"Platform {platform.system()} not supported. Integration mode is set to NumPy.")
-        return None
-
     try:
         c_lib = ctypes.cdll.LoadLibrary(c_lib_path)
     except:
