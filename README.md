@@ -1,32 +1,34 @@
 # ChessSL
-Chess engine trained with supervised learning using Leela Chess Zero T80 data.
+Chess engine trained with supervised learning using Leela Chess Zero T80 data. This is a student project for the course PHYS4061 Computational Physics in CUHK.
 
 As of 23/11/2024 on lichess.org, the engine has a bullet rating of 2154 and a blitz rating of 2113, which is stronger than 90.3% and 94.7% of the players respectively.
 (See https://lichess.org/@/chesssl_bot) 
 
-A short report can be found in the repository, but for simplicity, some details are omitted in the report.
+A short report can be found in the repository, but to keep it short, some details are omitted in the report.
 
 ## Installation
 Python version 3.10 or higher is required to run the engine.
 
-To install the required packages, run
-```
-pip3 install -r requirements.txt
-```
-or install the following packages manually:
-```
-numpy==1.26.4
-torch==2.4.0
-pyyaml==6.0.2
-```
-Extra packages may be required to run the engine in CUDA, depending on your system. 
+1. To install the required packages, run
+    ```
+    pip3 install -r requirements.txt
+    ```
+    or install the following packages manually:
+    ```
+    numpy==1.26.4
+    torch==2.4.0
+    pyyaml==6.0.2
+    ```
+    Extra packages may be required to run the engine in CUDA, depending on your system. 
 
-After installing the packages, navigate into the `src` folder and compile the dynamic-link library by 
-```
-make [CC=gcc]
-```
-If you don't have a C compiler, the precompiled library is already included in the repository,
-but they are not guaranteed to work on your system.
+2. After installing the packages, navigate into the `src` folder and compile the dynamic-link library by running `make`:
+    ```
+    make [CC=gcc]
+    ```
+    If you don't have a C compiler, the precompiled library is already included in the repository,
+    but they are not guaranteed to work on your system.
+
+3. Finally, edit the `config.yaml` file accordingly.
 
 ## Universal Chess Interface (UCI)
 Due to time constraint, only the bare minimal commands are implemented to work with the lichess-bot API (https://github.com/lichess-bot-devs/lichess-bot).
@@ -62,6 +64,9 @@ python3 uci.py
 <<< position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 moves e2e4 e7e5 g1f3
 
 <<< go wtime 300000 btime 300000 
+>>> bestmove b8c6
+
+<<< go nodes 1024
 >>> bestmove b8c6
 
 # If `print_tree_info` is set to true in `config.yaml`
