@@ -4,6 +4,8 @@ Chess engine trained with supervised learning using Leela Chess Zero T80 data.
 As of 23/11/2024 on lichess.org, the engine has a bullet rating of 2154 and a blitz rating of 2113, which is stronger than 90.3% and 94.7% of the players respectively.
 (See https://lichess.org/@/chesssl_bot) 
 
+A short report can be found in the repository, but for simplicity, some details are omitted in the report.
+
 ## Installation
 Python version 3.10 or higher is required to run the engine.
 
@@ -19,7 +21,7 @@ pyyaml==6.0.2
 ```
 Extra packages may be required to run the engine in CUDA, depending on your system. 
 
-After installing the packages, compile the dynamic-link library by 
+After installing the packages, navigate into the `src` folder and compile the dynamic-link library by 
 ```
 make [CC=gcc]
 ```
@@ -29,7 +31,7 @@ but they are not guaranteed to work on your system.
 ## Universal Chess Interface (UCI)
 Due to time constraint, only the bare minimal commands are implemented to work with the lichess-bot API (https://github.com/lichess-bot-devs/lichess-bot).
 
-To run the engine, simply run
+To run the engine, simply navigate into the `scripts` folder and run
 ```
 python3 uci.py
 ```
